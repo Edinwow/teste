@@ -3,511 +3,505 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Painel de Gastos da Moto v2.1</title>
+    <title>Painel de Gastos da Moto v3.0</title>
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap');
 
         :root {
-            --bg-color: #f8f9fa;
-            --card-bg-color: #ffffff;
-            --text-color: #212529;
-            --text-secondary-color: #6c757d;
-            --accent-color: #007bff;
-            --border-color: #dee2e6;
-            --shadow-color: rgba(0, 0, 0, 0.05);
+            --sidebar-bg: #1e293b;
+            --main-bg: #f1f5f9;
+            --card-bg: #ffffff;
+            --text-primary: #0f172a;
+            --text-secondary: #64748b;
+            --text-on-dark: #cbd5e1;
+            --accent-color: #3b82f6;
+            --accent-hover: #2563eb;
+            --border-color: #e2e8f0;
+            --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
         }
 
         body {
-            font-family: 'Inter', sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            margin: 0;
-            padding: 20px;
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--main-bg);
+            color: var(--text-primary);
+            display: flex;
         }
 
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
+        #loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--main-bg);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .spinner {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            border: 8px solid var(--border-color);
+            border-top-color: var(--accent-color);
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
         }
 
-        header {
-            text-align: center;
-            margin-bottom: 40px;
+        .sidebar {
+            width: 260px;
+            background-color: var(--sidebar-bg);
+            color: var(--text-on-dark);
+            padding: 2rem 1rem;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            position: fixed;
+        }
+        .sidebar-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 2.5rem;
+            padding: 0 0.5rem;
+        }
+        .sidebar-header svg {
+            width: 32px;
+            height: 32px;
+            fill: var(--accent-color);
+        }
+        .sidebar-header h1 {
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+        .nav-menu {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        .nav-item a {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            text-decoration: none;
+            color: var(--text-on-dark);
+            font-weight: 600;
+            transition: background-color 0.2s ease, color 0.2s ease;
+        }
+        .nav-item a:hover {
+            background-color: #334155;
+        }
+        .nav-item a.active {
+            background-color: var(--accent-color);
+            color: #fff;
+        }
+        .nav-item a svg {
+            width: 20px;
+            height: 20px;
+            opacity: 0.8;
+        }
+        .nav-item a.active svg {
+            opacity: 1;
         }
 
-        header h1 {
-            font-size: 2.5rem;
-            font-weight: 700;
-            color: var(--text-color);
+        .main-content {
+            flex-grow: 1;
+            margin-left: 260px;
+            padding: 2rem;
         }
-
+        
+        .page-header h2 {
+            font-size: 1.8rem;
+            margin-bottom: 1.5rem;
+        }
+        
         .kpi-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
         }
-
         .kpi-card {
-            background-color: var(--card-bg-color);
-            padding: 25px;
+            background-color: var(--card-bg);
+            padding: 1.5rem;
             border-radius: 12px;
-            box-shadow: 0 4px 12px var(--shadow-color);
-            text-align: center;
-        }
-
-        .kpi-card .label {
-            font-size: 0.9rem;
-            color: var(--text-secondary-color);
-            margin-bottom: 10px;
-            text-transform: uppercase;
-            font-weight: 600;
-        }
-
-        .kpi-card .value {
-            font-size: 2.2rem;
-            font-weight: 700;
-            color: var(--accent-color);
-        }
-        
-        .kpi-card .value .unit {
-            font-size: 1.2rem;
-            font-weight: 400;
-            color: var(--text-secondary-color);
-        }
-
-        .chart-card {
-            background-color: var(--card-bg-color);
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0 4px 12px var(--shadow-color);
-        }
-        
-        .chart-card h2 {
-            font-size: 1.2rem;
-            font-weight: 600;
-            margin-top: 0;
-            margin-bottom: 20px;
-        }
-        
-        .main-charts-grid {
-            display: grid;
-            grid-template-columns: 1fr 2fr;
-            gap: 20px;
-            margin-bottom: 20px;
-        }
-
-        .tabs {
+            box-shadow: var(--shadow);
             display: flex;
-            flex-wrap: wrap;
-            margin-bottom: 20px;
-            border-bottom: 1px solid var(--border-color);
-        }
-        .tab-link {
-            padding: 10px 20px;
-            cursor: pointer;
-            border: none;
-            background: none;
-            font-size: 1rem;
-            font-weight: 600;
-            color: var(--text-secondary-color);
-            border-bottom: 3px solid transparent;
-            margin-bottom: -1px;
-        }
-        .tab-link.active {
-            color: var(--accent-color);
-            border-bottom-color: var(--accent-color);
-        }
-        .tab-content {
-            display: none;
-        }
-        .tab-content.active {
-            display: block;
-        }
-
-        .table-card {
-            background-color: var(--card-bg-color);
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0 4px 12px var(--shadow-color);
-            overflow-x: auto;
-        }
-        .table-header {
-            display: flex;
-            justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
+            gap: 1rem;
         }
-        .table-header h2 { margin: 0; font-size: 1.2rem; font-weight: 600; }
-        .table-header input { padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border-color); font-size: 0.9rem; }
+        .kpi-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: grid;
+            place-items: center;
+            flex-shrink: 0;
+        }
+        .kpi-icon svg { width: 24px; height: 24px; fill: #fff; }
+        .kpi-card .label { font-size: 0.9rem; color: var(--text-secondary); }
+        .kpi-card .value { font-size: 1.75rem; font-weight: 700; }
+        .kpi-card .value .unit { font-size: 1rem; font-weight: 400; color: var(--text-secondary); }
+
+        .chart-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .chart-card, .table-card {
+            background-color: var(--card-bg);
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+        }
+        .chart-card h3, .table-card h3 {
+            font-size: 1.2rem;
+            margin-bottom: 1rem;
+        }
+        
         table { width: 100%; border-collapse: collapse; }
         th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid var(--border-color); }
-        th { background-color: var(--bg-color); font-weight: 600; }
-        tbody tr:hover { background-color: #f1f3f5; }
-
-        @media (max-width: 992px) {
-            .main-charts-grid { grid-template-columns: 1fr; }
-        }
+        th { font-weight: 600; color: var(--text-secondary); font-size: 0.85rem; text-transform: uppercase; }
+        tbody tr:hover { background-color: #f8fafc; }
+        td:last-child { font-weight: 600; }
         
-         @media (max-width: 768px) {
-            body { padding: 10px; }
-            .kpi-grid { grid-template-columns: 1fr; }
+        .page-content { display: none; }
+        .page-content.active { display: block; }
+        
+        @media (max-width: 992px) {
+            .sidebar {
+                width: 100%;
+                height: auto;
+                position: static;
+                flex-direction: row;
+                justify-content: center;
+                padding: 0.5rem;
+            }
+            .sidebar-header { display: none; }
+            .nav-menu { flex-direction: row; }
+            .nav-item a { flex-direction: column; gap: 0.25rem; font-size: 0.75rem; padding: 0.5rem; }
+            .main-content { margin-left: 0; }
         }
+        @media (max-width: 600px) {
+            body { flex-direction: column; }
+            .kpi-grid, .chart-grid { grid-template-columns: 1fr; }
+            .main-content { padding: 1rem; }
+            .page-header h2 { font-size: 1.5rem; }
+        }
+
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <header>
-            <h1>Painel de Gastos da Moto</h1>
-        </header>
-
-        <div class="tabs">
-            <button class="tab-link active" onclick="openTab(event, 'tab-overview')">Visão Geral</button>
-            <button class="tab-link" onclick="openTab(event, 'tab-gasolina')">Gasolina</button>
-            <button class="tab-link" onclick="openTab(event, 'tab-oleo')">Óleo</button>
-            <button class="tab-link" onclick="openTab(event, 'tab-infracao')">Infração</button>
-            <button class="tab-link" onclick="openTab(event, 'tab-outros')">Outros</button>
+    <div id="loader">
+        <div class="spinner"></div>
+    </div>
+    
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 15c-.83 0-1.5-.67-1.5-1.5S5.67 12 6.5 12s1.5.67 1.5 1.5S7.33 15 6.5 15zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 10l1.5-4.5h11L19 10H5z"></path></svg>
+            <h1>Moto Painel</h1>
         </div>
+        <nav>
+            <ul class="nav-menu">
+                <li class="nav-item">
+                    <a href="#" class="nav-link active" onclick="openPage(event, 'page-overview')">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"></path></svg>
+                        <span>Visão Geral</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" onclick="openPage(event, 'page-gasolina')">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 3c-1.1 0-2 .9-2 2v3.17c0 .53.21 1.04.59 1.42L12 11l1.42-1.42c.37-.38.58-.89.58-1.42V5c0-1.1-.9-2-2-2zm0 18c-3.31 0-6-2.69-6-6 0-2.22 1.21-4.15 3-5.19V13h6v-3.19c1.79 1.04 3 2.97 3 5.19 0 3.31-2.69 6-6 6z"></path></svg>
+                        <span>Gasolina</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" onclick="openPage(event, 'page-oleo')">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 10.48V6c0-1.1-.9-2-2-2H8c-1.1 0-2 .9-2 2v4.48l-2.07 5.53c-.24.63-.03 1.34.52 1.73.15.11.32.18.49.2h12.12c.65 0 1.2-.51 1.29-1.15.03-.22.01-.45-.06-.66L18 10.48zM12 15c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"></path></svg>
+                        <span>Óleo</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" onclick="openPage(event, 'page-infracao')">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 13h-2v-6h2v6zm-1-8C6.48 5 2 9.48 2 15s4.48 10 10 10 10-4.48 10-10S17.52 5 12 5zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-2 4h-2v-2h2v2z"></path></svg>
+                        <span>Infração</span>
+                    </a>
+                </li>
+                 <li class="nav-item">
+                    <a href="#" class="nav-link" onclick="openPage(event, 'page-outros')">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49c.08-.14.12-.31.12-.48 0-.55-.45-1-1-1H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"></path></svg>
+                        <span>Outros</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    </aside>
 
-        <div id="tab-overview" class="tab-content active">
+    <main class="main-content">
+        <div id="page-overview" class="page-content active">
+            <div class="page-header"><h2>Visão Geral</h2></div>
             <section class="kpi-grid">
                 <div class="kpi-card">
-                    <div class="label">Custo Total</div>
-                    <div class="value" id="total-cost">R$ 0,00</div>
+                    <div class="kpi-icon" style="background-color: #ef4444;">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c2.15-.46 3.5-1.78 3.5-3.85 0-2.11-1.42-3.47-4.2-4.1z"></path></svg>
+                    </div>
+                    <div>
+                        <div class="label">Custo Total</div>
+                        <div class="value" id="total-cost">R$ 0,00</div>
+                    </div>
                 </div>
                 <div class="kpi-card">
-                    <div class="label">Consumo Médio</div>
-                    <div class="value" id="avg-consumption">0 <span class="unit">km/L</span></div>
+                     <div class="kpi-icon" style="background-color: #22c55e;">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m16 6-1.41-1.41-2.53 2.54-2.54-2.54L8 6l4 4zm-4 7c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm0 6c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"></path></svg>
+                    </div>
+                    <div>
+                        <div class="label">Consumo Médio</div>
+                        <div class="value" id="avg-consumption">0 <span class="unit">km/L</span></div>
+                    </div>
                 </div>
             </section>
-
-            <section class="main-charts-grid">
-                <div class="chart-card">
-                    <h2>Gastos por Categoria</h2>
-                    <div id="category-chart"></div>
-                </div>
-                <div class="chart-card">
-                    <h2>Gastos Mensais (Todas as Categorias)</h2>
+            <div class="chart-grid">
+                <div class="chart-card" style="grid-column: 1 / -1;">
+                    <h3>Gastos Mensais (Todas as Categorias)</h3>
                     <div id="monthly-spending-chart"></div>
                 </div>
-            </section>
+                 <div class="chart-card">
+                    <h3>Gastos por Categoria</h3>
+                    <div id="category-chart"></div>
+                </div>
+            </div>
         </div>
 
-        <div id="tab-gasolina" class="tab-content">
-            <h2>Detalhes de Abastecimento</h2>
+        <div id="page-gasolina" class="page-content">
+            <div class="page-header"><h2>Análise de Gasolina</h2></div>
             <section class="kpi-grid">
-                <div class="kpi-card"><div class="label">Gasto Total com Gasolina</div><div class="value" id="gas-total-cost"></div></div>
+                <div class="kpi-card"><div class="label">Gasto Total c/ Gasolina</div><div class="value" id="gas-total-cost"></div></div>
                 <div class="kpi-card"><div class="label">Total de Litros</div><div class="value" id="gas-total-liters"></div></div>
                 <div class="kpi-card"><div class="label">Preço Médio / Litro</div><div class="value" id="gas-avg-price"></div></div>
-                <div class="kpi-card"><div class="label">Preço Mais Baixo</div><div class="value" id="gas-min-price"></div></div>
-                <div class="kpi-card"><div class="label">Preço Mais Alto</div><div class="value" id="gas-max-price"></div></div>
             </section>
-            <section class="chart-card">
-                 <h2>Evolução do Preço da Gasolina (R$/Litro)</h2>
-                <div id="fuel-price-chart"></div>
-            </section>
+            <div class="chart-grid">
+                <div class="chart-card">
+                    <h3>Evolução do Preço da Gasolina (R$/Litro)</h3>
+                    <div id="fuel-price-chart"></div>
+                </div>
+                <div class="chart-card">
+                    <h3>Evolução do Consumo (Km/L)</h3>
+                    <div id="fuel-consumption-chart"></div>
+                </div>
+            </div>
         </div>
-
-        <div id="tab-oleo" class="tab-content">
-            <h2>Detalhes de Troca de Óleo</h2>
-            <section class="kpi-grid">
+        
+        <div id="page-oleo" class="page-content">
+             <div class="page-header"><h2>Análise de Trocas de Óleo</h2></div>
+             <section class="kpi-grid">
                 <div class="kpi-card"><div class="label">Gasto Total com Óleo</div><div class="value" id="oleo-total-cost"></div></div>
                 <div class="kpi-card"><div class="label">Nº de Trocas</div><div class="value" id="oleo-count"></div></div>
                 <div class="kpi-card"><div class="label">Custo Médio por Troca</div><div class="value" id="oleo-avg-cost"></div></div>
                 <div class="kpi-card"><div class="label">KM Médio entre Trocas</div><div class="value" id="oleo-avg-km"></div></div>
             </section>
+             <div class="table-card">
+                <h3>Histórico de Trocas</h3>
+                <table id="oleo-table">
+                    <thead><tr><th>Data</th><th>KM no Odômetro</th><th>KM Rodados desde a Última Troca</th></tr></thead>
+                    <tbody id="oleo-table-body"></tbody>
+                </table>
+            </div>
         </div>
 
-        <div id="tab-infracao" class="tab-content">
-            <h2>Detalhes de Infrações</h2>
-            <section class="kpi-grid">
+        <div id="page-infracao" class="page-content">
+             <div class="page-header"><h2>Análise de Infrações</h2></div>
+             <section class="kpi-grid">
                 <div class="kpi-card"><div class="label">Custo Total</div><div class="value" id="infracao-total-cost"></div></div>
                 <div class="kpi-card"><div class="label">Nº de Infrações</div><div class="value" id="infracao-count"></div></div>
                 <div class="kpi-card"><div class="label">Total de Pontos</div><div class="value" id="infracao-total-pontos"></div></div>
             </section>
-             <section class="table-card">
-                <h2>Lista de Infrações</h2>
+             <div class="table-card">
+                <h3>Lista de Infrações</h3>
                 <table id="infracoes-table">
                     <thead><tr><th>Data</th><th>Motivo</th><th>Tipo</th><th>Pontos</th><th>Valor</th></tr></thead>
                     <tbody id="infracoes-table-body"></tbody>
                 </table>
-            </section>
+            </div>
         </div>
         
-        <div id="tab-outros" class="tab-content">
-            <h2>Detalhes de Outros Gastos</h2>
-            <section class="kpi-grid">
+        <div id="page-outros" class="page-content">
+            <div class="page-header"><h2>Análise de Outros Gastos</h2></div>
+             <section class="kpi-grid">
                  <div class="kpi-card"><div class="label">Gasto Total</div><div class="value" id="outros-total-cost"></div></div>
             </section>
-             <section class="chart-card">
-                 <h2>Top 10 Maiores Gastos</h2>
+             <div class="chart-card">
+                 <h3>Top 10 Maiores Gastos</h3>
                 <div id="outros-top-chart"></div>
-            </section>
+            </div>
         </div>
-
-    </div>
-
+    </main>
+    
     <script>
         const dataUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSXYUEcvzBEg1AQ5754QmQUGb73zVzI6LEI-WmdAxHx1N2_5ZGLPP0DobNZQW1-IUk1qZVOiu0SZ965/pub?gid=817947441&single=true&output=csv';
 
         // --- UTILITY FUNCTIONS ---
-        function openTab(evt, tabName) {
-            var i, tabcontent, tablinks;
-            tabcontent = document.getElementsByClassName("tab-content");
-            for (i = 0; i < tabcontent.length; i++) {
-                tabcontent[i].style.display = "none";
-            }
-            tablinks = document.getElementsByClassName("tab-link");
-            for (i = 0; i < tablinks.length; i++) {
-                tablinks[i].className = tablinks[i].className.replace(" active", "");
-            }
-            document.getElementById(tabName).style.display = "block";
-            evt.currentTarget.className += " active";
+        function openPage(evt, pageName) {
+            document.querySelectorAll(".page-content").forEach(p => p.classList.remove('active'));
+            document.querySelectorAll(".nav-link").forEach(l => l.classList.remove('active'));
+            document.getElementById(pageName).classList.add('active');
+            evt.currentTarget.classList.add('active');
         }
 
-        const formatCurrency = (value) => value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        const formatCurrency = (value) => value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
         const formatNumber = (value, dec = 2) => value.toLocaleString('pt-BR', { minimumFractionDigits: dec, maximumFractionDigits: dec });
 
         // --- MAIN LOGIC ---
-        document.addEventListener("DOMContentLoaded", async function() {
+        document.addEventListener("DOMContentLoaded", async () => {
             try {
                 const response = await fetch(dataUrl);
                 const csvText = await response.text();
                 const rawData = parseCSV(csvText);
-                
                 processAndRenderDashboard(rawData);
             } catch (error) {
                 console.error("Erro ao buscar ou processar os dados:", error);
-                document.querySelector('.container').innerHTML = '<h1>Erro ao carregar os dados. Verifique o console para mais detalhes.</h1>';
+                document.body.innerHTML = '<h1>Erro ao carregar os dados. Verifique o console.</h1>';
+            } finally {
+                document.getElementById('loader').style.display = 'none';
             }
         });
-
-        /**
-         * Parses a CSV string into an array of objects.
-         * This function correctly handles fields that contain commas by checking for quotes.
-         * @param {string} text - The CSV string to parse.
-         * @returns {Array<Object>} An array of record objects.
-         */
+        
         function parseCSV(text) {
-            const lines = text.split(/\r?\n/).slice(1); // Ignore header
+            const lines = text.split(/\r?\n/).slice(1);
             const records = [];
-
-            // Regex to split by comma but ignore commas inside double quotes
             const regex = /,(?=(?:(?:[^"]*"){2})*[^"]*$)/;
-
             lines.forEach(line => {
-                if (!line.trim()) return; // Skip empty lines
-
-                const values = line.split(regex);
-                
-                // Clean up quotes from each value
-                const cleanedValues = values.map(value => {
-                    return value ? value.trim().replace(/^"|"$/g, '') : '';
-                });
-
-                if (cleanedValues.length >= 4) {
-                    records.push({
-                        Categoria: cleanedValues[0],
-                        Data: cleanedValues[1],
-                        Chave: cleanedValues[2],
-                        Valor: cleanedValues[3]
-                    });
+                if (!line.trim()) return;
+                const values = line.split(regex).map(v => v.trim().replace(/^"|"$/g, ''));
+                if (values.length >= 4) {
+                    records.push({ Categoria: values[0], Data: values[1], Chave: values[2], Valor: values[3] });
                 }
             });
             return records.filter(d => d.Categoria && d.Data && d.Chave && d.Valor);
         }
 
-
         function processAndRenderDashboard(rawData) {
-            // --- DATA PROCESSING ---
-            const parseDate = (dateStr) => {
-                if (!/^\d{2}\/\d{2}\/\d{4}$/.test(dateStr)) return null;
-                const [day, month, year] = dateStr.split('/');
+            const parseDate = (d) => {
+                if (!/^\d{2}\/\d{2}\/\d{4}$/.test(d)) return null;
+                const [day, month, year] = d.split('/');
                 return new Date(year, month - 1, day);
             };
-            const parseValue = (valueStr) => parseFloat(String(valueStr).replace(/\./g, '').replace(',', '.'));
+            const parseValue = (v) => parseFloat(String(v).replace(/\./g, '').replace(',', '.'));
 
-            const processedData = rawData
-                .filter(d => d.Chave !== "Moto") // Remove a compra da moto
-                .map(d => {
-                    const valueStr = d.Valor;
-                    const isNumeric = !isNaN(parseValue(valueStr));
-                    return {
-                        ...d,
-                        date: parseDate(d.Data),
-                        value: isNumeric ? parseValue(valueStr) : valueStr,
-                        isCost: ["Valor total", "Valor"].includes(d.Chave) || d.Categoria === 'Outros'
-                    }
-                }).filter(d => d.date); // Remove entradas com data inválida
+            const processedData = rawData.filter(d => d.Chave !== "Moto").map(d => {
+                const val = d.Valor;
+                const isNum = !isNaN(parseValue(val));
+                return { ...d, date: parseDate(d.Data), value: isNum ? parseValue(val) : val, isCost: ["Valor total", "Valor"].includes(d.Chave) || d.Categoria === 'Outros' };
+            }).filter(d => d.date);
 
-            // --- OVERVIEW TAB ---
-            const totalCost = processedData
-                .filter(d => d.isCost)
-                .reduce((acc, curr) => acc + curr.value, 0);
+            // --- OVERVIEW ---
+            const totalCost = processedData.filter(d => d.isCost).reduce((a, c) => a + c.value, 0);
             document.getElementById('total-cost').textContent = formatCurrency(totalCost);
+            const costsByCategory = processedData.filter(d => d.isCost).reduce((a, c) => ({...a, [c.Categoria]: (a[c.Categoria] || 0) + c.value }), {});
+            const monthlySpending = processedData.filter(d => d.isCost).reduce((a, c) => {
+                const month = `${c.date.getFullYear()}-${(c.date.getMonth() + 1).toString().padStart(2, '0')}`;
+                return {...a, [month]: (a[month] || 0) + c.value };
+            }, {});
 
-            const costsByCategory = processedData
-                .filter(d => d.isCost)
-                .reduce((acc, curr) => {
-                    acc[curr.Categoria] = (acc[curr.Categoria] || 0) + curr.value;
-                    return acc;
-                }, {});
-
-            const monthlySpending = processedData
-                .filter(d => d.isCost)
-                .reduce((acc, curr) => {
-                    const month = `${curr.date.getFullYear()}-${(curr.date.getMonth() + 1).toString().padStart(2, '0')}`;
-                    acc[month] = (acc[month] || 0) + curr.value;
-                    return acc;
-                }, {});
-            
-            // --- FUEL CONSUMPTION CALCULATION ---
+            // --- FUEL DATA (USED IN OVERVIEW AND GASOLINA) ---
             const fuelStops = {};
-            processedData
-                .filter(d => d.Categoria === 'Gasolina')
-                .forEach(d => {
-                    const dateStr = d.Data;
-                    if (!fuelStops[dateStr]) fuelStops[dateStr] = { date: d.date };
-                    if (d.Chave === 'Quilometragem') fuelStops[dateStr].km = d.value;
-                    if (d.Chave === 'Valor total') fuelStops[dateStr].totalValue = d.value;
-                    if (d.Chave === 'Valor do litro') fuelStops[dateStr].pricePerLiter = d.value;
-                });
+            processedData.filter(d => d.Categoria === 'Gasolina').forEach(d => {
+                const dateStr = d.Data;
+                if (!fuelStops[dateStr]) fuelStops[dateStr] = { date: d.date };
+                if (d.Chave === 'Quilometragem') fuelStops[dateStr].km = d.value;
+                if (d.Chave === 'Valor total') fuelStops[dateStr].totalValue = d.value;
+                if (d.Chave === 'Valor do litro') fuelStops[dateStr].pricePerLiter = d.value;
+            });
+            const validFuelStops = Object.values(fuelStops).filter(d => d.km && d.totalValue && d.pricePerLiter && d.km < 20000).sort((a, b) => a.date - b.date);
             
-            const validFuelStops = Object.values(fuelStops)
-                .filter(d => d.km && d.totalValue && d.pricePerLiter && d.km < 20000)
-                .sort((a, b) => a.date - b.date);
-
             const consumptionData = [];
             for (let i = 1; i < validFuelStops.length; i++) {
-                const distance = validFuelStops[i].km - validFuelStops[i-1].km;
+                const dist = validFuelStops[i].km - validFuelStops[i - 1].km;
                 const liters = validFuelStops[i].totalValue / validFuelStops[i].pricePerLiter;
-                if (distance > 0 && liters > 0) {
-                    const kpl = distance / liters;
-                    if(kpl > 10 && kpl < 100) consumptionData.push(kpl);
+                if (dist > 0 && liters > 0) {
+                    const kpl = dist / liters;
+                    if (kpl > 10 && kpl < 100) consumptionData.push({ date: validFuelStops[i].date, kpl });
                 }
             }
-            
-            const avgConsumption = consumptionData.length > 0
-                ? consumptionData.reduce((a, b) => a + b, 0) / consumptionData.length
-                : 0;
-            document.getElementById('avg-consumption').innerHTML = `${formatNumber(avgConsumption, 2)} <span class="unit">km/L</span>`;
+            const avgConsumption = consumptionData.length > 0 ? consumptionData.reduce((a, c) => a + c.kpl, 0) / consumptionData.length : 0;
+            document.getElementById('avg-consumption').innerHTML = `${formatNumber(avgConsumption, 1)} <span class="unit">km/L</span>`;
 
             // --- GASOLINA TAB ---
-            const gasolinaData = processedData.filter(d => d.Categoria === 'Gasolina');
-            const gasTotalCost = validFuelStops.reduce((acc, curr) => acc + curr.totalValue, 0);
-            const gasTotalLiters = validFuelStops.reduce((acc, curr) => acc + (curr.totalValue / curr.pricePerLiter), 0);
-            const gasAvgPrice = gasTotalCost / gasTotalLiters;
-            const prices = validFuelStops.map(d => d.pricePerLiter);
+            const gasTotalCost = processedData.filter(d => d.Categoria === 'Gasolina' && d.Chave === 'Valor total').reduce((a, c) => a + c.value, 0);
+            const gasTotalLiters = validFuelStops.reduce((a, c) => a + (c.totalValue / c.pricePerLiter), 0);
             document.getElementById('gas-total-cost').textContent = formatCurrency(gasTotalCost);
-            document.getElementById('gas-total-liters').innerHTML = `${formatNumber(gasTotalLiters, 2)} <span class="unit">L</span>`;
-            document.getElementById('gas-avg-price').textContent = formatCurrency(gasAvgPrice);
-            document.getElementById('gas-min-price').textContent = formatCurrency(Math.min(...prices));
-            document.getElementById('gas-max-price').textContent = formatCurrency(Math.max(...prices));
-            
+            document.getElementById('gas-total-liters').innerHTML = `${formatNumber(gasTotalLiters, 1)} <span class="unit">L</span>`;
+            document.getElementById('gas-avg-price').textContent = formatCurrency(gasTotalCost / gasTotalLiters);
+
             // --- OLEO TAB ---
             const oleoCosts = processedData.filter(d => d.Categoria === 'Óleo' && d.Chave === 'Valor');
             const oleoKms = processedData.filter(d => d.Categoria === 'Óleo' && d.Chave === 'Quilometragem').sort((a, b) => a.date - b.date);
-            const oleoTotalCost = oleoCosts.reduce((acc, curr) => acc + curr.value, 0);
-            const oleoCount = oleoCosts.length;
-            const oleoAvgCost = oleoTotalCost / oleoCount;
+            const oleoTotalCost = oleoCosts.reduce((a, c) => a + c.value, 0);
             const kmDiffs = [];
-            for (let i = 1; i < oleoKms.length; i++) {
-                kmDiffs.push(oleoKms[i].value - oleoKms[i-1].value);
-            }
+            for (let i = 1; i < oleoKms.length; i++) kmDiffs.push(oleoKms[i].value - oleoKms[i - 1].value);
             const oleoAvgKm = kmDiffs.length > 0 ? kmDiffs.reduce((a, b) => a + b, 0) / kmDiffs.length : 0;
             document.getElementById('oleo-total-cost').textContent = formatCurrency(oleoTotalCost);
-            document.getElementById('oleo-count').textContent = oleoCount;
-            document.getElementById('oleo-avg-cost').textContent = formatCurrency(oleoAvgCost);
+            document.getElementById('oleo-count').textContent = oleoCosts.length;
+            document.getElementById('oleo-avg-cost').textContent = formatCurrency(oleoTotalCost / oleoCosts.length);
             document.getElementById('oleo-avg-km').innerHTML = `${formatNumber(oleoAvgKm, 0)} <span class="unit">km</span>`;
-
-            // --- INFRACAO TAB ---
-            const infracaoData = {};
-            processedData.filter(d => d.Categoria === 'Infração').forEach(d => {
-                const date = d.Data;
-                if (!infracaoData[date]) infracaoData[date] = {Data: date};
-                infracaoData[date][d.Chave] = d.value;
+            const oleoTableBody = document.getElementById('oleo-table-body');
+            oleoKms.forEach((entry, i) => {
+                const kmSinceLast = i > 0 ? entry.value - oleoKms[i - 1].value : null;
+                let row = oleoTableBody.insertRow();
+                row.insertCell(0).textContent = entry.Data;
+                row.insertCell(1).textContent = `${formatNumber(entry.value, 1)} km`;
+                row.insertCell(2).textContent = kmSinceLast ? `${formatNumber(kmSinceLast, 1)} km` : 'Primeira troca registrada';
             });
-            const infracoes = Object.values(infracaoData);
-            const infracaoTotalCost = infracoes.reduce((acc, curr) => acc + (curr.Valor || 0), 0);
-            const infracaoTotalPontos = infracoes.reduce((acc, curr) => acc + (parseInt(curr.Pontos) || 0), 0);
-            document.getElementById('infracao-total-cost').textContent = formatCurrency(infracaoTotalCost);
+            
+            // --- INFRACAO & OUTROS TABS --- (Similar logic to before)
+            const infracoes = Object.values(processedData.filter(d => d.Categoria === 'Infração').reduce((a, c) => ({...a, [c.Data]: { ...a[c.Data], [c.Chave]: c.value, Data: c.Data } }), {}));
+            document.getElementById('infracao-total-cost').textContent = formatCurrency(infracoes.reduce((a, c) => a + (c.Valor || 0), 0));
             document.getElementById('infracao-count').textContent = infracoes.length;
-            document.getElementById('infracao-total-pontos').textContent = infracaoTotalPontos;
-            const tableBody = document.getElementById('infracoes-table-body');
-            infracoes.forEach(i => {
-                let row = tableBody.insertRow();
-                row.insertCell(0).textContent = i.Data;
-                row.insertCell(1).textContent = i.Motivo;
-                row.insertCell(2).textContent = i.Tipo;
-                row.insertCell(3).textContent = i.Pontos;
-                row.insertCell(4).textContent = formatCurrency(i.Valor);
-            });
-
-            // --- OUTROS TAB ---
+            document.getElementById('infracao-total-pontos').textContent = infracoes.reduce((a, c) => a + (parseInt(c.Pontos) || 0), 0);
+            infracoes.forEach(i => { let r=document.getElementById('infracoes-table-body').insertRow(); r.insertCell(0).textContent=i.Data;r.insertCell(1).textContent=i.Motivo;r.insertCell(2).textContent=i.Tipo;r.insertCell(3).textContent=i.Pontos;r.insertCell(4).textContent=formatCurrency(i.Valor); });
+            
             const outrosData = processedData.filter(d => d.Categoria === 'Outros');
-            const outrosTotalCost = outrosData.reduce((acc, curr) => acc + curr.value, 0);
-            document.getElementById('outros-total-cost').textContent = formatCurrency(outrosTotalCost);
+            document.getElementById('outros-total-cost').textContent = formatCurrency(outrosData.reduce((a, c) => a + c.value, 0));
             const top10Outros = outrosData.sort((a,b) => b.value - a.value).slice(0, 10);
-
-            // --- RENDER CHARTS ---
-            renderCharts(costsByCategory, monthlySpending, validFuelStops, top10Outros);
+            
+            renderCharts(costsByCategory, monthlySpending, validFuelStops, consumptionData, top10Outros);
         }
         
-        function renderCharts(costsByCategory, monthlySpending, validFuelStops, top10Outros) {
+        function renderCharts(costsByCategory, monthlySpending, validFuelStops, consumptionData, top10Outros) {
             const chartOptions = {
-                colors: ['#007bff', '#28a745', '#ffc107', '#dc3545', '#17a2b8'],
-                chart: { fontFamily: 'Inter, sans-serif', toolbar: { show: false } },
-                stroke: { width: 2, curve: 'smooth' },
-                markers: { size: 4 },
+                chart: { fontFamily: 'Poppins, sans-serif', toolbar: { show: false }, zoom: { enabled: false } },
+                stroke: { width: 3, curve: 'smooth' },
+                markers: { size: 0 },
                 tooltip: { theme: 'light', x: { format: 'dd MMM yyyy' } },
-                grid: { borderColor: '#e9ecef' }
+                grid: { borderColor: '#e2e8f0', strokeDashArray: 5 },
+                dataLabels: { enabled: false }
             };
 
-            // Overview - Category Chart
-            new ApexCharts(document.querySelector("#category-chart"), {
-                series: Object.values(costsByCategory),
-                labels: Object.keys(costsByCategory),
-                chart: { type: 'donut', height: 350 },
-                colors: chartOptions.colors,
-                legend: { position: 'bottom' }
-            }).render();
+            new ApexCharts(document.querySelector("#category-chart"), { ...chartOptions, series: Object.values(costsByCategory), labels: Object.keys(costsByCategory), chart: { ...chartOptions.chart, type: 'donut' }, legend: { position: 'bottom' } }).render();
 
-            // Overview - Monthly Spending
             const sortedMonths = Object.keys(monthlySpending).sort();
-            new ApexCharts(document.querySelector("#monthly-spending-chart"), {
-                ...chartOptions,
-                series: [{ name: 'Gastos', data: sortedMonths.map(m => monthlySpending[m]) }],
-                chart: { type: 'area', height: 350, ...chartOptions.chart },
-                xaxis: { categories: sortedMonths, labels: { style: { colors: '#6c757d' } } },
-                yaxis: { labels: { style: { colors: '#6c757d' }, formatter: (val) => formatCurrency(val) } },
-                dataLabels: { enabled: false },
-                tooltip: { ...chartOptions.tooltip, y: { formatter: (val) => formatCurrency(val) } }
-            }).render();
+            new ApexCharts(document.querySelector("#monthly-spending-chart"), { ...chartOptions, series: [{ name: 'Gastos', data: sortedMonths.map(m => monthlySpending[m]) }], chart: { ...chartOptions.chart, type: 'area', height: 350 }, xaxis: { type: 'category', categories: sortedMonths }, yaxis: { labels: { formatter: val => formatCurrency(val) } }, tooltip: { ...chartOptions.tooltip, y: { formatter: val => formatCurrency(val) } } }).render();
 
-            // Gasolina - Fuel Price
-            new ApexCharts(document.querySelector("#fuel-price-chart"), {
-                ...chartOptions,
-                series: [{ name: 'Valor/litro', data: validFuelStops.map(d => ({ x: d.date.getTime(), y: d.pricePerLiter })) }],
-                chart: { type: 'line', height: 350, ...chartOptions.chart },
-                xaxis: { type: 'datetime', labels: { style: { colors: '#6c757d' } } },
-                yaxis: { labels: { style: { colors: '#6c757d' }, formatter: (val) => formatCurrency(val) } },
-                tooltip: { ...chartOptions.tooltip, y: { formatter: (val) => formatCurrency(val) } }
-            }).render();
+            new ApexCharts(document.querySelector("#fuel-price-chart"), { ...chartOptions, series: [{ name: 'Valor/litro', data: validFuelStops.map(d => [d.date.getTime(), d.pricePerLiter]) }], chart: { ...chartOptions.chart, type: 'line', height: 350, }, colors: ['#f59e0b'], xaxis: { type: 'datetime' }, yaxis: { labels: { formatter: val => formatCurrency(val) } }, tooltip: { ...chartOptions.tooltip, y: { formatter: val => formatCurrency(val) } } }).render();
             
-            // Outros - Top 10
-            new ApexCharts(document.querySelector("#outros-top-chart"), {
-                ...chartOptions,
-                 series: [{ name: 'Custo', data: top10Outros.map(item => item.value) }],
-                 chart: { type: 'bar', height: 350 },
-                 plotOptions: { bar: { borderRadius: 4, horizontal: true, } },
-                 dataLabels: { enabled: false },
-                 xaxis: { categories: top10Outros.map(item => item.Chave), labels: { formatter: (val) => formatCurrency(val) } },
-                 tooltip: { y: { formatter: (val) => formatCurrency(val) } }
-            }).render();
-        }
+            new ApexCharts(document.querySelector("#fuel-consumption-chart"), { ...chartOptions, series: [{ name: 'Km/L', data: consumptionData.map(d => [d.date.getTime(), d.kpl]) }], chart: { ...chartOptions.chart, type: 'area', height: 350, }, colors: ['#10b981'], xaxis: { type: 'datetime' }, yaxis: { labels: { formatter: val => formatNumber(val, 1) } }, tooltip: { ...chartOptions.tooltip, y: { formatter: val => `${formatNumber(val, 1)} Km/L` } } }).render();
 
+            new ApexCharts(document.querySelector("#outros-top-chart"), { ...chartOptions, series: [{ name: 'Custo', data: top10Outros.map(i => i.value) }], chart: { ...chartOptions.chart, type: 'bar', height: 350 }, plotOptions: { bar: { borderRadius: 4, horizontal: true } }, xaxis: { categories: top10Outros.map(i => i.Chave), labels: { formatter: val => formatCurrency(val) } }, tooltip: { y: { formatter: val => formatCurrency(val) } } }).render();
+        }
     </script>
 </body>
 </html>
