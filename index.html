@@ -4,96 +4,110 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Controle de Despesas</title>
+  <title>App de Despesas</title>
   <link rel="stylesheet" href="styles.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="script.js" defer></script>
   <script src="camera.js" defer></script>
   <link rel="icon" href="receipt.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 
 <body>
-  <div class="container">
-    <div class="form-section">
-      <h2>Registro de despesas</h2>
-      <form id="despesa-form">
-        <div class="row" style="flex-direction: column; align-items: flex-start; gap: 5px;">
-          <div class="name-wrapper">
-            <div class="nome-com-icone" style="display: flex; align-items: center; gap: 8px;">
-              <img id="funcionario-img" src="https://i.imgur.com/xsfzmyg.jpeg" alt="Foto do funcionário" />
-              <select id="nome" name="nome" class="name-inline" required></select>
-            </div>
-          </div>
-          <div class="date-wrapper" style="margin-top: 8px; display: flex; align-items: center; gap: 8px;">
-            <img src="https://img.icons8.com/ios-filled/50/calendar.png" alt="Data" />
-            <input type="date" id="data" name="data" class="date-inline" required />
-          </div>
-        </div>
-
-        <div class="row">
-          <div>
-            <label for="forma_pagamento">Forma</label>
-            <select id="forma_pagamento" name="forma_pagamento">
-              <option value="Dinheiro">Dinheiro</option>
-              <option value="Cartão de crédito">Cartão de crédito</option>
-            </select>
-          </div>
-          <div>
-            <label for="grupo">Despesa</label>
-            <select id="grupo" name="grupo"></select>
-          </div>
-        </div>
-
-        <label for="descricao">Descrição</label>
-        <input type="text" id="descricao" name="descricao" />
-
-        <div>
-          <label for="valor">
-            Valor
-            <span id="limite-restante" style="font-size: 0.9em; color: #f87171; margin-left: 5px; font-weight: 100;"></span>
-          </label>
-          <input type="text" id="valor" name="valor" placeholder="R$ 0,00" />
-        </div>
-
-        <label>Nota fiscal</label>
-        <span id="nome-arquivo" style="margin-top: 2px; display: block; color: #0e8e6e; font-size: 0.9em;"></span>
-        <div class="nota-fiscal-buttons">
-          <button type="button" id="btn-capturar">📷 Fotografar</button>
-          <button type="button" id="btn-selecionar">📁 Selecionar</button>
-        </div>
-        <input type="file" id="nota_fiscal_camera" name="nota_fiscal" accept="image/*" capture="environment" style="display:none" />
-        <input type="file" id="nota_fiscal_arquivo" name="nota_fiscal" accept="image/*" style="display:none" />
-        <input type="text" id="nota_fiscal_url" name="nota_fiscal_url" style="display:none" />
-
-        <button type="submit">Enviar despesa</button>
-      </form>
+  <div class="app-container">
+    <div class="summary-grid">
+      <div class="summary-card">
+        <h4>Hoje</h4>
+        <p>R$ 0,00</p>
+      </div>
+      <div class="summary-card">
+        <h4>Esta Semana</h4>
+        <p>R$ 0,00</p>
+      </div>
+      <div class="summary-card">
+        <h4>Este Mês</h4>
+        <p>R$ 0,00</p>
+      </div>
     </div>
 
-    <div class="report-section">
-      <hr class="separator">
-      <h2>Gerar relatório</h2>
-      <form id="report-form">
-        <div class="name-wrapper">
-          <div class="nome-com-icone">
-            <img id="relatorio-funcionario-img" src="https://i.imgur.com/xsfzmyg.jpeg" alt="Foto do funcionário" />
-            <select id="relatorio-nomeSelect" class="name-inline"></select>
+    <div class="tab-nav">
+      <button class="tab-link active" data-tab="registrar">Registrar</button>
+      <button class="tab-link" data-tab="relatorio">Relatório</button>
+    </div>
+
+    <div class="tab-content">
+      <div id="registrar" class="tab-pane active">
+        <form id="despesa-form">
+          <div class="user-date-group">
+            <div class="user-select-group">
+              <img id="funcionario-img" src="https://i.imgur.com/xsfzmyg.jpeg" alt="Foto" />
+              <select id="nome" name="nome" required></select>
+            </div>
+            <input type="date" id="data" name="data" class="date-input" required />
           </div>
-        </div>
-        <div class="row">
-          <div>
-            <label for="dataInicio">Data inicial</label>
-            <input type="date" id="dataInicio">
+
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="forma_pagamento">Forma de Pagamento</label>
+              <select id="forma_pagamento" name="forma_pagamento" class="form-control"></select>
+            </div>
+            <div class="form-group">
+              <label for="grupo">Categoria</label>
+              <select id="grupo" name="grupo" class="form-control"></select>
+            </div>
           </div>
-          <div>
-            <label for="dataFim">Data final</label>
-            <input type="date" id="dataFim">
+
+          <div class="form-group">
+            <label for="descricao">Descrição</label>
+            <input type="text" id="descricao" name="descricao" class="form-control" placeholder="Ex: Almoço com cliente" />
           </div>
-        </div>
-        <button type="submit">Gerar relatório</button>
-      </form>
+
+          <div class="form-group">
+            <label for="valor">Valor <span id="limite-restante" class="limit-info"></span></label>
+            <input type="text" id="valor" name="valor" class="form-control" placeholder="R$ 0,00" />
+          </div>
+
+          <div class="form-group">
+            <label>Nota Fiscal</label>
+            <div class="file-upload-area">
+              <span id="nome-arquivo" class="file-info">Nenhum arquivo selecionado</span>
+              <div class="button-group">
+                <button type="button" id="btn-capturar" class="btn btn-secondary">Fotografar</button>
+                <button type="button" id="btn-selecionar" class="btn btn-secondary">Selecionar</button>
+              </div>
+            </div>
+            <input type="file" id="nota_fiscal_camera" name="nota_fiscal" accept="image/*" capture="environment" style="display:none" />
+            <input type="file" id="nota_fiscal_arquivo" name="nota_fiscal" accept="image/*" style="display:none" />
+            <input type="text" id="nota_fiscal_url" name="nota_fiscal_url" style="display:none" />
+          </div>
+
+          <button type="submit" class="btn btn-primary">Adicionar Despesa</button>
+        </form>
+      </div>
+
+      <div id="relatorio" class="tab-pane">
+        <form id="report-form">
+            <div class="user-select-group report-user">
+              <img id="relatorio-funcionario-img" src="https://i.imgur.com/xsfzmyg.jpeg" alt="Foto" />
+              <select id="relatorio-nomeSelect"></select>
+            </div>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="dataInicio">Data Inicial</label>
+                    <input type="date" id="dataInicio" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="dataFim">Data Final</label>
+                    <input type="date" id="dataFim" class="form-control">
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary">Gerar e Baixar Relatório</button>
+        </form>
+      </div>
     </div>
   </div>
 </body>
-
 </html>
