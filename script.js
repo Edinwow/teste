@@ -140,7 +140,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ===============================
-    // LÓGICA PRINCIPAL
+    // LÓGICA PRINCIPAL (COM CORREÇÃO)
     // ===============================
 
     async function carregarDadosDespesas() {
@@ -157,12 +157,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // --- FUNÇÃO CORRIGIDA ---
     function atualizarLimiteAlimentacao() {
         const spanLimite = document.getElementById('limite-restante');
         if (!spanLimite) return;
 
         const nomeSelecionado = selectNome?.value;
-        const dataSelecionada = inputData?.value;
+        const dataSelecionada = inputData?.value; // Formato: AAAA-MM-DD
         const despesaSelecionada = selectGrupo?.value;
 
         if (despesaSelecionada !== 'Alimentação') {
@@ -175,15 +176,28 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        const [ano, mes, dia] = dataSelecionada.split('-');
-        const dataFormatada = `${dia}/${mes}/${ano}`;
         let somaDoDia = 0;
 
         despesasData.forEach(row => {
-            if (row.nome?.trim() === nomeSelecionado && row.data?.trim() === dataFormatada && row.grupo?.trim() === 'Alimentação') {
+            if (!row.data || !row.nome || !row.grupo) return; // Pula linhas inválidas
+
+            // Lógica de comparação de data robusta
+            const dataDaLinha = row.data.trim(); // Formato esperado: DD/MM/AAAA
+            const partes = dataDaLinha.split('/');
+            
+            // Pula a linha se o formato da data na planilha for inesperado
+            if (partes.length !== 3) return; 
+
+            // Converte a data da linha para AAAA-MM-DD para uma comparação segura
+            const dataDaLinhaFormatada = `${partes[2]}-${partes[1].padStart(2, '0')}-${partes[0].padStart(2, '0')}`;
+            
+            // Compara nome, data (já formatada) e grupo
+            if (row.nome.trim() === nomeSelecionado && dataDaLinhaFormatada === dataSelecionada && row.grupo.trim() === 'Alimentação') {
                 let valorStr = (row.valor || '').replace(/[^\d,]/g, '').replace(',', '.');
                 let valor = parseFloat(valorStr);
-                if (!isNaN(valor)) somaDoDia += valor;
+                if (!isNaN(valor)) {
+                    somaDoDia += valor;
+                }
             }
         });
 
@@ -192,6 +206,7 @@ document.addEventListener('DOMContentLoaded', () => {
         spanLimite.classList.toggle('warning', restante <= 50 && restante > 0);
         spanLimite.classList.toggle('danger', restante <= 0);
     }
+
 
     if (formRegistro) {
         formRegistro.addEventListener('submit', async function(e) {
@@ -213,9 +228,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     method: 'POST',
                     body: params
                 });
-
-                // --- AJUSTE PRINCIPAL AQUI ---
-                // Adiciona a nova despesa à lista de dados local para atualização instantânea
+                
                 const novaDespesa = {
                     nome: selectNome.value,
                     data: dataFormatadaParaEnvio,
@@ -245,9 +258,7 @@ document.addEventListener('DOMContentLoaded', () => {
             submitBtn.disabled = false;
             submitBtn.textContent = 'Adicionar Despesa';
 
-            // Remove a busca de dados aqui e chama a atualização diretamente
-            // await carregarDadosDespesas(); // REMOVIDO
-            atualizarLimiteAlimentacao(); // ATUALIZADO
+            atualizarLimiteAlimentacao();
         });
     }
 
