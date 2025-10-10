@@ -1,422 +1,330 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Painel de Gastos da Moto v5.4</title>
-    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
-
-        :root {
-            --bg-color: #f4f7f9;
-            --card-bg-color: #ffffff;
-            --text-color: #2c3e50;
-            --text-secondary-color: #7f8c8d;
-            --accent-color: #3498db;
-            --accent-hover: #2980b9;
-            --border-color: #e0e5e9;
-            --shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-        }
-
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-        }
-
-        #loader {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: var(--bg-color); display: flex; justify-content: center;
-            align-items: center; z-index: 1000;
-        }
-        .spinner {
-            width: 50px; height: 50px; border-radius: 50%; border: 6px solid var(--border-color);
-            border-top-color: var(--accent-color); animation: spin 1s linear infinite;
-        }
-        @keyframes spin { to { transform: rotate(360deg); } }
-
-        .container {
-            max-width: 1600px;
-            margin: 0 auto;
-            padding: 2rem 1.5rem;
-        }
-        
-        .tabs {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 1rem;
-            margin-bottom: 2rem;
-        }
-        .tab-link {
-            padding: 0.75rem 1.5rem;
-            cursor: pointer;
-            border: 2px solid var(--border-color);
-            background: var(--card-bg-color);
-            font-size: 1rem;
-            font-weight: 600;
-            color: var(--text-secondary-color);
-            border-radius: 50px;
-            transition: all 0.2s ease-in-out;
-        }
-        .tab-link:hover {
-            border-color: var(--accent-color);
-            color: var(--accent-color);
-        }
-        .tab-link.active {
-            background-color: var(--accent-color);
-            color: #fff;
-            border-color: var(--accent-color);
-        }
-
-        .tab-content { display: none; }
-        .tab-content.active { display: block; }
-        
-        .page-header h2 {
-            font-size: 1.8rem;
-            margin-bottom: 1.5rem;
-            text-align: center;
-        }
-        
-        .kpi-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 1.5rem;
-        }
-        .kpi-card {
-            background-color: var(--card-bg-color);
-            padding: 1.5rem;
-            border-radius: 12px;
-            box-shadow: var(--shadow);
-            text-align: center;
-        }
-        .kpi-card .label {
-            font-size: 1rem;
-            color: var(--text-secondary-color);
-            margin-bottom: 0.5rem;
-        }
-        .kpi-card .value {
-            font-size: 2rem;
-            font-weight: 700;
-            color: var(--text-color);
-        }
-        .kpi-card .value .unit {
-            font-size: 1rem;
-            font-weight: 400;
-        }
-
-        .chart-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 1.5rem;
-        }
-        .chart-card, .table-card {
-            background-color: var(--card-bg-color);
-            padding: 1.5rem;
-            border-radius: 12px;
-            box-shadow: var(--shadow);
-        }
-        .chart-card h3, .table-card h3 {
-            font-size: 1.2rem;
-            margin-bottom: 1rem;
-            text-align: center;
-        }
-        
-        table { width: 100%; border-collapse: collapse; }
-        th, td { padding: 12px; text-align: left; border-bottom: 1px solid var(--border-color); }
-        th { font-weight: 600; color: var(--text-secondary-color); font-size: 0.85rem; text-transform: uppercase; }
-        tbody tr:hover { background-color: #f8fafc; }
-    </style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Painel de Gastos — Moto 🏍️</title>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" />
+  <style>
+    :root{
+      --bg:#fafafa; --card:#ffffff; --muted:#6b7280; --accent:#0f172a;
+      --glass: rgba(15,23,42,0.03);
+      font-family: Inter, system-ui, -apple-system, 'Helvetica Neue', Arial;
+    }
+    html,body{height:100%;margin:0;background:var(--bg);color:var(--accent)}
+    .wrap{max-width:1100px;margin:28px auto;padding:20px}
+    header{display:flex;align-items:center;gap:16px}
+    h1{font-size:20px;margin:0}
+    p.lead{margin:0;color:var(--muted);font-size:13px}
+    .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:18px}
+    .card{background:var(--card);padding:14px;border-radius:12px;box-shadow:0 6px 18px rgba(16,24,40,0.04)}
+    .card.big{grid-column:span 2}
+    .ind{display:flex;justify-content:space-between;align-items:center}
+    .ind .val{font-size:18px;font-weight:700}
+    .muted{color:var(--muted);font-size:13px}
+    .controls{display:flex;gap:10px;align-items:center}
+    select,button{padding:8px 10px;border-radius:8px;border:1px solid rgba(15,23,42,0.06);background:transparent}
+    canvas{width:100% !important;height:260px !important}
+    small{color:var(--muted)}
+    .row{display:flex;gap:12px}
+    .metric{display:flex;flex-direction:column;gap:6px}
+    .metric .k{font-weight:700;font-size:16px}
+    footer{margin-top:16px;color:var(--muted);font-size:13px}
+    @media(max-width:900px){.grid{grid-template-columns:1fr;}.card.big{grid-column:span 1}}
+  </style>
+  <!-- Libraries -->
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
+  <div class="wrap">
+    <header>
+      <div>
+        <h1>📊 Painel de Gastos — Minha Moto</h1>
+        <p class="lead">Design minimalista e interativo. Mostra indicadores por categoria e gráficos temporais.</p>
+      </div>
+      <div style="margin-left:auto;display:flex;flex-direction:column;align-items:flex-end">
+        <small>Fonte: Google Sheets (online)</small>
+        <small id="status" class="muted">Carregando dados…</small>
+      </div>
+    </header>
 
-    <div id="loader"><div class="spinner"></div></div>
-    
-    <div class="container">
-        <div class="tabs">
-            <button class="tab-link active" onclick="openTab(event, 'tab-overview')">📊 Visão Geral</button>
-            <button class="tab-link" onclick="openTab(event, 'tab-gasolina')">⛽ Gasolina</button>
-            <button class="tab-link" onclick="openTab(event, 'tab-oleo')">💧 Óleo</button>
-            <button class="tab-link" onclick="openTab(event, 'tab-infracao')">📄 Infração</button>
-            <button class="tab-link" onclick="openTab(event, 'tab-outros')">🛒 Outros</button>
+    <div class="grid">
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <div class="muted">Filtrar categoria</div>
+            <div class="controls" style="margin-top:6px">
+              <select id="categorySelect"></select>
+              <button id="resetBtn">🔁 Reset</button>
+            </div>
+          </div>
+          <div style="text-align:right">
+            <div class="muted">Período</div>
+            <div id="period" style="font-weight:700">—</div>
+          </div>
         </div>
+      </div>
 
-        <div id="tab-overview" class="tab-content active">
-            <section class="kpi-grid">
-                <div class="kpi-card">
-                    <div class="label">💰 Custo Total</div>
-                    <div class="value" id="total-cost">R$ 0,00</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="label">🧭 Consumo Médio</div>
-                    <div class="value" id="avg-consumption">0 <span class="unit">km/L</span></div>
-                </div>
-            </section>
-            <div class="chart-grid">
-                <div class="chart-card" style="grid-column: 1 / -1;">
-                    <h3>Gastos Mensais (Todas as Categorias)</h3>
-                    <div id="monthly-spending-chart"></div>
-                </div>
-                 <div class="chart-card">
-                    <h3>Gastos por Categoria</h3>
-                    <div id="category-chart"></div>
-                </div>
-            </div>
+      <div class="card">
+        <div class="ind">
+          <div>
+            <div class="muted">Total gasto</div>
+            <div class="val" id="totalSpent">R$ 0,00</div>
+            <small class="muted">(soma de Valor/Valor total quando aplicável)</small>
+          </div>
+          <div style="text-align:right">
+            <div class="muted">Entradas</div>
+            <div class="val" id="countEntries">0</div>
+            <small class="muted">registros</small>
+          </div>
         </div>
+      </div>
 
-        <div id="tab-gasolina" class="tab-content">
-            <div class="page-header"><h2>Análise de Gasolina</h2></div>
-            <section class="kpi-grid">
-                <div class="kpi-card"><div class="label">Gasto Total</div><div class="value" id="gas-total-cost"></div></div>
-                <div class="kpi-card"><div class="label">Total de Litros</div><div class="value" id="gas-total-liters"></div></div>
-                <div class="kpi-card"><div class="label">Preço Médio / Litro</div><div class="value" id="gas-avg-price"></div></div>
-            </section>
-            <div class="chart-grid">
-                <div class="chart-card">
-                    <h3>Evolução do Preço da Gasolina (R$/Litro)</h3>
-                    <div id="fuel-price-chart"></div>
-                </div>
-                <div class="chart-card">
-                    <h3>Evolução do Consumo (Km/L)</h3>
-                    <div id="fuel-consumption-chart"></div>
-                </div>
-            </div>
+      <div class="card">
+        <div class="ind">
+          <div>
+            <div class="muted">Último gasto</div>
+            <div id="lastEntry" class="val">—</div>
+            <small class="muted" id="lastDesc">—</small>
+          </div>
+          <div style="text-align:right">
+            <div class="muted">Média por mês</div>
+            <div id="avgPerMonth" class="val">R$ 0,00</div>
+            <small class="muted">(média simples)</small>
+          </div>
         </div>
-        
-        <div id="tab-oleo" class="tab-content">
-             <div class="page-header"><h2>Análise de Trocas de Óleo</h2></div>
-             <section class="kpi-grid">
-                <div class="kpi-card"><div class="label">Gasto Total</div><div class="value" id="oleo-total-cost"></div></div>
-                <div class="kpi-card"><div class="label">Nº de Trocas</div><div class="value" id="oleo-count"></div></div>
-                <div class="kpi-card"><div class="label">Custo Médio / Troca</div><div class="value" id="oleo-avg-cost"></div></div>
-                <div class="kpi-card"><div class="label">KM Médio / Troca</div><div class="value" id="oleo-avg-km"></div></div>
-            </section>
-             <div class="table-card">
-                <h3>Histórico de Trocas</h3>
-                <table id="oleo-table">
-                    <thead><tr><th>Data</th><th>KM no Odômetro</th><th>KM Rodados desde a Última Troca</th></tr></thead>
-                    <tbody id="oleo-table-body"></tbody>
-                </table>
-            </div>
-        </div>
+      </div>
 
-        <div id="tab-infracao" class="tab-content">
-             <div class="page-header"><h2>Análise de Infrações</h2></div>
-             <section class="kpi-grid">
-                <div class="kpi-card"><div class="label">Custo Total</div><div class="value" id="infracao-total-cost"></div></div>
-                <div class="kpi-card"><div class="label">Nº de Infrações</div><div class="value" id="infracao-count"></div></div>
-                <div class="kpi-card"><div class="label">Total de Pontos</div><div class="value" id="infracao-total-pontos"></div></div>
-            </section>
-             <div class="table-card">
-                <h3>Lista de Infrações</h3>
-                <table id="infracoes-table">
-                    <thead><tr><th>Data</th><th>Motivo</th><th>Tipo</th><th>Pontos</th><th>Valor</th></tr></thead>
-                    <tbody id="infracoes-table-body"></tbody>
-                </table>
+      <div class="card big">
+        <div class="muted">📈 Gastos ao longo do tempo</div>
+        <canvas id="timeChart"></canvas>
+      </div>
+
+      <div class="card">
+        <div class="muted">💸 Distribuição por categoria</div>
+        <canvas id="pieChart"></canvas>
+      </div>
+
+      <div class="card">
+        <div class="muted" id="gasTitle">🔧 Indicadores da categoria</div>
+        <div style="margin-top:10px" id="categoryMetrics">
+          <div class="row">
+            <div class="metric">
+              <small class="muted">Total</small>
+              <div class="k" id="catTotal">R$ 0,00</div>
             </div>
+            <div class="metric">
+              <small class="muted">Contagem</small>
+              <div class="k" id="catCount">0</div>
+            </div>
+            <div class="metric">
+              <small class="muted">Média</small>
+              <div class="k" id="catAvg">R$ 0,00</div>
+            </div>
+          </div>
+          <div style="margin-top:10px" id="gasExtra" class="muted"></div>
         </div>
-        
-        <div id="tab-outros" class="tab-content">
-            <div class="page-header"><h2>Análise de Outros Gastos</h2></div>
-             <section class="kpi-grid">
-                 <div class="kpi-card"><div class="label">Gasto Total</div><div class="value" id="outros-total-cost"></div></div>
-            </section>
-             <div class="table-card">
-                <h3>Lista de Todos os Gastos</h3>
-                <table id="outros-table">
-                    <thead><tr><th>Data</th><th>Item</th><th>Valor</th></tr></thead>
-                    <tbody id="outros-table-body"></tbody>
-                </table>
-             </div>
-        </div>
+      </div>
+
     </div>
-    
-    <script>
-        const dataUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSXYUEcvzBEg1AQ5754QmQUGb73zVzI6LEI-WmdAxHx1N2_5ZGLPP0DobNZQW1-IUk1qZVOiu0SZ965/pub?gid=817947441&single=true&output=csv';
 
-        function openTab(evt, tabName) {
-            document.querySelectorAll(".tab-content").forEach(p => p.classList.remove('active'));
-            document.querySelectorAll(".tab-link").forEach(l => l.classList.remove('active'));
-            document.getElementById(tabName).classList.add('active');
-            evt.currentTarget.classList.add('active');
-        }
+    <footer>
+      <div>💡 Dica: selecione uma categoria para ver detalhes. Se houver bloqueio CORS ao buscar a planilha, baixe o CSV e abra este arquivo localmente (arraste-o para o navegador).</div>
+    </footer>
+  </div>
 
-        const formatCurrency = (value) => value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-        const formatNumber = (value, dec = 2) => value.toLocaleString('pt-BR', { minimumFractionDigits: dec, maximumFractionDigits: dec });
+<script>
+const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSXYUEcvzBEg1AQ5754QmQUGb73zVzI6LEI-WmdAxHx1N2_5ZGLPP0DobNZQW1-IUk1qZVOiu0SZ965/pub?gid=817947441&single=true&output=csv';
 
-        document.addEventListener("DOMContentLoaded", async () => {
-            try {
-                const response = await fetch(dataUrl);
-                const csvText = await response.text();
-                const rawData = parseCSV(csvText);
-                processAndRenderDashboard(rawData);
-            } catch (error) {
-                console.error("Erro ao buscar ou processar os dados:", error);
-                document.body.innerHTML = '<h1>Erro ao carregar os dados. Verifique o console.</h1>';
-            } finally {
-                document.getElementById('loader').style.display = 'none';
-            }
-        });
-        
-        function parseCSV(text) {
-            const lines = text.split(/\r?\n/).slice(1);
-            const records = [];
-            const regex = /,(?=(?:(?:[^"]*"){2})*[^"]*$)/;
-            lines.forEach(line => {
-                if (!line.trim()) return;
-                const values = line.split(regex).map(v => v.trim().replace(/^"|"$/g, ''));
-                if (values.length >= 4) {
-                    records.push({ Categoria: values[0], Data: values[1], Chave: values[2], Valor: values[3] });
-                }
-            });
-            return records.filter(d => d.Categoria && d.Data && d.Chave && d.Valor);
-        }
+let raw = [];
+let parsed = [];
+let charts = {};
 
-        function processAndRenderDashboard(rawData) {
-            const parseDate = (d) => {
-                if (!/^\d{2}\/\d{2}\/\d{4}$/.test(d)) return null;
-                const [day, month, year] = d.split('/');
-                return new Date(year, month - 1, day);
-            };
-            const parseValue = (v) => parseFloat(String(v).replace(/\./g, '').replace(',', '.'));
+function fmtBR(x){
+  if(x===null||x===undefined||isNaN(x)) return 'R$ 0,00';
+  return x.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+}
 
-            const processedData = rawData.filter(d => d.Chave !== "Moto").map(d => {
-                const val = d.Valor;
-                const isNum = !isNaN(parseValue(val));
-                return { ...d, date: parseDate(d.Data), value: isNum ? parseValue(val) : val, isCost: ["Valor total", "Valor"].includes(d.Chave) || d.Categoria === 'Outros' };
-            }).filter(d => d.date);
+function parseNumber(v){
+  if(!v) return NaN;
+  // replace comma decimal
+  v = String(v).replace(/\./g,'').replace(/,/g,'.');
+  const n = parseFloat(v);
+  return isNaN(n)?NaN:n;
+}
 
-            // --- CÁLCULOS GERAIS ---
-            const totalCost = processedData.filter(d => d.isCost).reduce((a, c) => a + (Number(c.value) || 0), 0);
-            const costsByCategory = processedData.filter(d => d.isCost).reduce((a, c) => ({...a, [c.Categoria]: (a[c.Categoria] || 0) + (Number(c.value) || 0) }), {});
-            const monthlySpending = processedData.filter(d => d.isCost).reduce((a, c) => {
-                const month = `${c.date.getFullYear()}-${(c.date.getMonth() + 1).toString().padStart(2, '0')}`;
-                return {...a, [month]: (a[month] || 0) + (Number(c.value) || 0) };
-            }, {});
-            document.getElementById('total-cost').textContent = formatCurrency(totalCost);
+function loadData(){
+  document.getElementById('status').textContent = 'Buscando CSV online…';
+  Papa.parse(CSV_URL, {
+    download:true, header:true, skipEmptyLines:true,
+    complete: function(res){
+      raw = res.data;
+      document.getElementById('status').textContent = 'Dados carregados — processando…';
+      processData();
+    },
+    error:function(err){
+      document.getElementById('status').textContent = 'Erro ao carregar CSV: '+err.message;
+    }
+  });
+}
 
-            // --- CÁLCULOS DE GASOLINA (LÓGICA REFEITA) ---
-            const gasolineData = processedData.filter(d => d.Categoria === 'Gasolina');
-            
-            // 1. Calcular Custo Total de forma separada e segura
-            const gasTotalCost = gasolineData
-                .filter(d => d.Chave.toLowerCase().includes('total'))
-                .reduce((acc, curr) => acc + (Number(curr.value) || 0), 0);
-            
-            document.getElementById('gas-total-cost').textContent = formatCurrency(gasTotalCost);
+function processData(){
+  // Normalize headers: Categoria,Data,Chave,Valor
+  parsed = raw.map(r=>({
+    Categoria:(r.Categoria||r.categoria||r.CATEGORY||r.Category||'').trim(),
+    Data:(r.Data||r.data||'').trim(),
+    Chave:(r.Chave||r.chave||r.Key||'').trim(),
+    Valor:(r.Valor||r.valor||r.Value||'').trim()
+  })).filter(r=>r.Categoria||r.Data||r.Valor);
 
-            // 2. Agrupar dados por data para cálculos de consumo
-            const fuelStops = {};
-            gasolineData.forEach(d => {
-                const dateStr = d.Data;
-                if (!fuelStops[dateStr]) fuelStops[dateStr] = { date: d.date };
-                const cleanKey = d.Chave.toLowerCase();
-                const value = Number(d.value) || 0;
+  // parse dates
+  parsed.forEach(r=>{
+    // try dd/mm/yyyy or yyyy-mm-dd
+    let d = r.Data;
+    let date = null;
+    if(/\d{2}\/\d{2}\/\d{4}/.test(d)){
+      const [dd,mm,yy]=d.split('/'); date = new Date(`${yy}-${mm}-${dd}T00:00:00`);
+    } else {
+      const t = Date.parse(d);
+      if(!isNaN(t)) date = new Date(t);
+    }
+    r._date = date;
+    r._valorNum = parseNumber(r.Valor);
+  });
 
-                if (cleanKey.includes('quilometragem')) fuelStops[dateStr].km = value;
-                else if (cleanKey.includes('total')) fuelStops[dateStr].totalValue = value;
-                else if (cleanKey.includes('litro')) fuelStops[dateStr].pricePerLiter = value;
-            });
+  // sort by date
+  parsed = parsed.filter(r=>r._date).sort((a,b)=>a._date - b._date);
 
-            // 3. Filtrar apenas os abastecimentos completos
-            const validFuelStops = Object.values(fuelStops)
-                .filter(d => d.km && d.totalValue && d.pricePerLiter && d.km < 20000)
-                .sort((a, b) => a.date - b.date);
+  setupUI();
+}
 
-            // 4. Calcular consumo e litros a partir dos dados válidos
-            const consumptionData = [];
-            for (let i = 1; i < validFuelStops.length; i++) {
-                const dist = validFuelStops[i].km - validFuelStops[i - 1].km;
-                const liters = validFuelStops[i].totalValue / validFuelStops[i].pricePerLiter;
-                if (dist > 0 && liters > 0) {
-                    const kpl = dist / liters;
-                    if (kpl > 10 && kpl < 100) consumptionData.push({ date: validFuelStops[i].date, kpl });
-                }
-            }
-            const avgConsumption = consumptionData.length > 0 ? consumptionData.reduce((a, c) => a + c.kpl, 0) / consumptionData.length : 0;
-            document.getElementById('avg-consumption').innerHTML = `${formatNumber(avgConsumption, 1)} <span class="unit">km/L</span>`;
+function setupUI(){
+  const cats = Array.from(new Set(parsed.map(r=>r.Categoria))).sort();
+  const sel = document.getElementById('categorySelect'); sel.innerHTML='';
+  const optAll = document.createElement('option'); optAll.value='__all'; optAll.textContent='— Todas as categorias —'; sel.appendChild(optAll);
+  cats.forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent=c;sel.appendChild(o)});
 
-            const gasTotalLiters = validFuelStops.reduce((a, c) => a + (c.totalValue / c.pricePerLiter), 0);
-            document.getElementById('gas-total-liters').innerHTML = `${formatNumber(gasTotalLiters, 1)} <span class="unit">L</span>`;
-            document.getElementById('gas-avg-price').textContent = formatCurrency(gasTotalLiters > 0 ? gasTotalCost / gasTotalLiters : 0);
-            
-            // --- CÁLCULOS DE ÓLEO ---
-            const oleoCosts = processedData.filter(d => d.Categoria === 'Óleo' && d.Chave === 'Valor');
-            const oleoKms = processedData.filter(d => d.Categoria === 'Óleo' && d.Chave === 'Quilometragem').sort((a, b) => a.date - b.date);
-            const oleoTotalCost = oleoCosts.reduce((a, c) => a + (Number(c.value) || 0), 0);
-            const kmDiffs = [];
-            for (let i = 1; i < oleoKms.length; i++) kmDiffs.push(oleoKms[i].value - oleoKms[i - 1].value);
-            const oleoAvgKm = kmDiffs.length > 0 ? kmDiffs.reduce((a, b) => a + b, 0) / kmDiffs.length : 0;
-            document.getElementById('oleo-total-cost').textContent = formatCurrency(oleoTotalCost);
-            document.getElementById('oleo-count').textContent = oleoCosts.length;
-            document.getElementById('oleo-avg-cost').textContent = formatCurrency(oleoCosts.length > 0 ? oleoTotalCost / oleoCosts.length : 0);
-            document.getElementById('oleo-avg-km').innerHTML = `${formatNumber(oleoAvgKm, 0)} <span class="unit">km</span>`;
-            const oleoTableBody = document.getElementById('oleo-table-body');
-            oleoTableBody.innerHTML = ''; // Limpa a tabela antes de preencher
-            oleoKms.forEach((entry, i) => {
-                const kmSinceLast = i > 0 ? entry.value - oleoKms[i - 1].value : null;
-                let row = oleoTableBody.insertRow();
-                row.insertCell(0).textContent = entry.Data;
-                row.insertCell(1).textContent = `${formatNumber(entry.value, 1)} km`;
-                row.insertCell(2).textContent = kmSinceLast ? `${formatNumber(kmSinceLast, 1)} km` : 'Primeira troca registrada';
-            });
-            
-            // --- OUTRAS ABAS ---
-            const infracoes = Object.values(processedData.filter(d => d.Categoria === 'Infração').reduce((a, c) => ({...a, [c.Data]: { ...a[c.Data], [c.Chave]: c.value, Data: c.Data } }), {}));
-            document.getElementById('infracao-total-cost').textContent = formatCurrency(infracoes.reduce((a, c) => a + (Number(c.Valor) || 0), 0));
-            document.getElementById('infracao-count').textContent = infracoes.length;
-            document.getElementById('infracao-total-pontos').textContent = infracoes.reduce((a, c) => a + (parseInt(c.Pontos) || 0), 0);
-            const infracoesTableBody = document.getElementById('infracoes-table-body');
-            infracoesTableBody.innerHTML = '';
-            infracoes.forEach(i => { let r=infracoesTableBody.insertRow(); r.insertCell(0).textContent=i.Data;r.insertCell(1).textContent=i.Motivo;r.insertCell(2).textContent=i.Tipo;r.insertCell(3).textContent=i.Pontos;r.insertCell(4).textContent=formatCurrency(i.Valor); });
-            
-            const outrosData = processedData.filter(d => d.Categoria === 'Outros').sort((a,b) => b.date - a.date);
-            document.getElementById('outros-total-cost').textContent = formatCurrency(costsByCategory['Outros'] || 0);
-            const outrosTableBody = document.getElementById('outros-table-body');
-            outrosTableBody.innerHTML = '';
-            outrosData.forEach(item => {
-                let row = outrosTableBody.insertRow();
-                row.insertCell(0).textContent = item.Data;
-                row.insertCell(1).textContent = item.Chave;
-                row.insertCell(2).textContent = formatCurrency(item.value);
-            });
-            
-            renderCharts(costsByCategory, monthlySpending, validFuelStops, consumptionData);
-        }
-        
-        function renderCharts(costsByCategory, monthlySpending, validFuelStops, consumptionData) {
-            const chartOptions = {
-                chart: { fontFamily: 'Inter, sans-serif', toolbar: { show: false }, zoom: { enabled: false } },
-                stroke: { width: 3, curve: 'smooth' },
-                markers: { size: 0 },
-                tooltip: { theme: 'light', x: { format: 'dd MMM yyyy' } },
-                grid: { borderColor: '#e0e5e9', strokeDashArray: 4 },
-                dataLabels: { enabled: false }
-            };
-            
-            document.querySelector("#category-chart").innerHTML = '';
-            const sortedCategories = Object.entries(costsByCategory).sort(([,a],[,b]) => b-a);
-            new ApexCharts(document.querySelector("#category-chart"), { ...chartOptions, series: [{ data: sortedCategories.map(c => c[1]) }], chart: { ...chartOptions.chart, type: 'bar' }, plotOptions: { bar: { borderRadius: 4, horizontal: true } }, xaxis: { categories: sortedCategories.map(c => c[0]), labels: { formatter: val => formatCurrency(val) } }, tooltip: { y: { formatter: val => formatCurrency(val) } } }).render();
+  document.getElementById('resetBtn').addEventListener('click',()=>{sel.value='__all'; updateViews();});
+  sel.addEventListener('change',updateViews);
 
-            document.querySelector("#monthly-spending-chart").innerHTML = '';
-            const sortedMonths = Object.keys(monthlySpending).sort();
-            new ApexCharts(document.querySelector("#monthly-spending-chart"), { ...chartOptions, series: [{ name: 'Gastos', data: sortedMonths.map(m => monthlySpending[m]) }], chart: { ...chartOptions.chart, type: 'area', height: 350 }, colors: ['#3498db'], xaxis: { type: 'category', categories: sortedMonths }, yaxis: { labels: { formatter: val => formatCurrency(val) } }, tooltip: { ...chartOptions.tooltip, y: { formatter: val => formatCurrency(val) } } }).render();
+  // initial charts
+  createCharts();
+  updateViews();
+  document.getElementById('status').textContent = 'Pronto ✅';
+}
 
-            document.querySelector("#fuel-price-chart").innerHTML = '';
-            new ApexCharts(document.querySelector("#fuel-price-chart"), { ...chartOptions, series: [{ name: 'Valor/litro', data: validFuelStops.map(d => [d.date.getTime(), d.pricePerLiter]) }], chart: { ...chartOptions.chart, type: 'line', height: 350 }, colors: ['#f39c12'], xaxis: { type: 'datetime' }, yaxis: { labels: { formatter: val => formatCurrency(val) } }, tooltip: { ...chartOptions.tooltip, y: { formatter: val => formatCurrency(val) } } }).render();
-            
-            document.querySelector("#fuel-consumption-chart").innerHTML = '';
-            new ApexCharts(document.querySelector("#fuel-consumption-chart"), { ...chartOptions, series: [{ name: 'Km/L', data: consumptionData.map(d => [d.date.getTime(), d.kpl]) }], chart: { ...chartOptions.chart, type: 'area', height: 350 }, colors: ['#2ecc71'], xaxis: { type: 'datetime' }, yaxis: { labels: { formatter: val => formatNumber(val, 1) } }, tooltip: { ...chartOptions.tooltip, y: { formatter: val => `${formatNumber(val, 1)} Km/L` } } }).render();
-        }
-    </script>
+function aggregateByMonth(entries){
+  const map = new Map();
+  entries.forEach(e=>{
+    const k = e._date.getFullYear() + '-' + String(e._date.getMonth()+1).padStart(2,'0');
+    if(!map.has(k)) map.set(k,0);
+    map.set(k, map.get(k) + (isFinite(e._valorNum)?e._valorNum:0));
+  });
+  const arr = Array.from(map.entries()).sort();
+  return arr.map(([k,v])=>({month:k, value:v}));
+}
+
+function createCharts(){
+  const tctx = document.getElementById('timeChart').getContext('2d');
+  charts.time = new Chart(tctx,{type:'line',data:{labels:[],datasets:[{label:'Gasto (R$)',data:[] ,tension:0.25,fill:true}]},options:{plugins:{legend:{display:false}},scales:{x:{type:'category'},y:{beginAtZero:true}}}});
+
+  const pctx = document.getElementById('pieChart').getContext('2d');
+  charts.pie = new Chart(pctx,{type:'pie',data:{labels:[],datasets:[{data:[]}]},options:{plugins:{legend:{position:'bottom'}}}});
+}
+
+function updateViews(){
+  const cat = document.getElementById('categorySelect').value;
+  const entries = cat==='__all'? parsed : parsed.filter(r=>r.Categoria===cat);
+
+  // basic indicators
+  const total = entries.reduce((s,e)=>(s + (isFinite(e._valorNum)?e._valorNum:0)),0);
+  document.getElementById('totalSpent').textContent = fmtBR(total);
+  document.getElementById('countEntries').textContent = entries.length;
+
+  const last = entries.slice().reverse().find(e=>isFinite(e._valorNum));
+  document.getElementById('lastEntry').textContent = last? fmtBR(last._valorNum) : '—';
+  document.getElementById('lastDesc').textContent = last? (last.Data + ' — ' + (last.Chave||'') ) : '—';
+
+  // period
+  if(parsed.length){
+    const d0 = parsed[0]._date; const d1 = parsed[parsed.length-1]._date;
+    document.getElementById('period').textContent = d0.toLocaleDateString('pt-BR') + ' → ' + d1.toLocaleDateString('pt-BR');
+  }
+
+  // avg per month
+  const months = new Set(entries.map(e=> e._date.getFullYear()+'-'+(e._date.getMonth()+1)));
+  const avgMonth = months.size? total / months.size : 0;
+  document.getElementById('avgPerMonth').textContent = fmtBR(avgMonth);
+
+  // category metrics
+  document.getElementById('catTotal').textContent = fmtBR(total);
+  document.getElementById('catCount').textContent = entries.length;
+  document.getElementById('catAvg').textContent = fmtBR(entries.length? total/entries.length : 0);
+
+  // pie chart: totals per category (global)
+  const totalsByCat = {};
+  parsed.forEach(e=>{ const v = isFinite(e._valorNum)?e._valorNum:0; totalsByCat[e.Categoria] = (totalsByCat[e.Categoria]||0)+v });
+  const labels = Object.keys(totalsByCat).sort((a,b)=>totalsByCat[b]-totalsByCat[a]);
+  charts.pie.data.labels = labels;
+  charts.pie.data.datasets[0].data = labels.map(l=>totalsByCat[l]);
+  charts.pie.update();
+
+  // time chart: monthly aggregated for selected entries
+  const monthly = aggregateByMonth(entries);
+  charts.time.data.labels = monthly.map(m=>m.month);
+  charts.time.data.datasets[0].data = monthly.map(m=>m.value);
+  charts.time.update();
+
+  // gas-specific extras
+  const gasExtra = document.getElementById('gasExtra'); gasExtra.innerHTML='';
+  document.getElementById('gasTitle').textContent = '🔧 Indicadores da categoria' + (cat && cat!=='__all' ? ' — ' + cat : '');
+  if((cat==='Gasolina' || cat.toLowerCase().includes('gasolina'))){
+    // compute km differences and cost per km when possible
+    const kmEntries = parsed.filter(e=>e.Categoria.toLowerCase().includes('gasolina') && e.Chave.toLowerCase().includes('quilometragem') && isFinite(e._valorNum));
+    const fills = parsed.filter(e=>e.Categoria.toLowerCase().includes('gasolina') && (e.Chave.toLowerCase().includes('valor total')|| e.Chave.toLowerCase().includes('valor')));
+    // build array of km by date
+    const kms = parsed.filter(e=>e.Categoria.toLowerCase().includes('gasolina') && e.Chave.toLowerCase().includes('quilometragem')).map(e=>({date:e._date,km:e._valorNum})).sort((a,b)=>a.date-b.date);
+    // pair successive km to estimate distance
+    let distances = [];
+    for(let i=1;i<kms.length;i++){ const d = kms[i].km - kms[i-1].km; if(isFinite(d) && d>0) distances.push(d); }
+    // try match fills to nearest km date within 3 days
+    let costPerKm = [];
+    fills.forEach(f=>{
+      const nearest = kms.reduce((acc,k)=>{
+        const diff = Math.abs(k.date - f._date);
+        if(diff < acc.diff) return {k:k,diff:diff}; return acc;
+      },{k:null,diff:Infinity});
+      if(nearest.k && nearest.k.km && isFinite(f._valorNum)){
+        costPerKm.push({date:f._date, cost:f._valorNum, km:nearest.k.km});
+      }
+    });
+
+    const avgDistance = distances.length? (distances.reduce((s,x)=>s+x,0)/distances.length):NaN;
+    const avgCostPerKm = (distances.length && parsed.length)? (()=>{
+      // approximate: sum of fill cost / sum distances (match by order)
+      const fillCosts = fills.filter(f=>isFinite(f._valorNum)).map(f=>f._valorNum);
+      const used = Math.min(fillCosts.length, distances.length);
+      if(used===0) return NaN;
+      const costSum = fillCosts.slice(-used).reduce((s,x)=>s+x,0);
+      const distSum = distances.slice(-used).reduce((s,x)=>s+x,0);
+      return costSum/distSum;
+    })():NaN;
+
+    const el = document.createElement('div');
+    el.innerHTML = `
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px">
+        <div><small class=\"muted\">Distância média entre abastecimentos</small><div class=\"k\">${isFinite(avgDistance)? Math.round(avgDistance)+' km':'—'}</div></div>
+        <div><small class=\"muted\">Custo médio por km (estimado)</small><div class=\"k\">${isFinite(avgCostPerKm)? fmtBR(avgCostPerKm):'—'}</div></div>
+        <div><small class=\"muted\">Abastecimentos registrados</small><div class=\"k\">${fills.length}</div></div>
+      </div>`;
+    gasExtra.appendChild(el);
+  }
+}
+
+// on load
+window.addEventListener('load',()=>{ loadData(); });
+
+</script>
 </body>
 </html>
