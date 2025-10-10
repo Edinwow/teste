@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Registro de despesas</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script src="script.js" defer></script>
+  <script src="camera.js" defer></script>
+  <link rel="icon" href="receipt.svg" type="image/svg+xml" />
+</head>
+<body>
+  <div class="container">
+    <h2>Registro de despesas</h2>
+    <form id="despesa-form">
+      <!-- Nome e Data -->
+      <div class="row" style="flex-direction: column; align-items: flex-start; gap: 5px;">
+        <div class="name-wrapper">
+          <div class="nome-com-icone" style="display: flex; align-items: center; gap: 8px;">
+            <img id="funcionario-img" src="https://i.imgur.com/xsfzmyg.jpeg" alt="Foto do funcionário" />
+            <select id="nome" name="nome" class="name-inline" required></select>
+          </div>
+        </div>
+
+        <div class="date-wrapper" style="margin-top: 8px; display: flex; align-items: center; gap: 8px;">
+          <img src="https://img.icons8.com/ios-filled/50/calendar.png" alt="Data" />
+          <input type="date" id="data" name="data" class="date-inline" required />
+        </div>
+      </div>
+
+      <!-- Forma e Despesa (lado a lado) -->
+      <div class="row">
+        <div>
+          <label for="forma_pagamento">Forma</label>
+          <select id="forma_pagamento" name="forma_pagamento">
+            <option value="Dinheiro">Dinheiro</option>
+            <option value="Cartão de crédito">Cartão de crédito</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="grupo">Despesa</label>
+          <select id="grupo" name="grupo">
+            <option value="">-- selecione --</option>
+            <option value="Alimentação">Alimentação</option>
+            <option value="Transporte">Transporte</option>
+            <option value="Hospedagem">Hospedagem</option>
+            <option value="Material">Material</option>
+            <option value="Outros">Outros</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Descrição -->
+      <label for="descricao">Descrição</label>
+      <input type="text" id="descricao" name="descricao" />
+
+      <!-- Valor -->
+      <label for="valor">
+        Valor
+        <span id="limite-restante" style="font-size: 0.9em; color: #5e6061; margin-left: 5px; font-weight: 100;"></span>
+      </label>
+      <input type="text" id="valor" name="valor" placeholder="R$ 0,00" />
+
+      <!-- Painel para despesas de Alimentação do dia -->
+      <div id="painel-alimentacao" style="display:none; margin-top:10px; background:#2b2b2b; padding:10px; border-radius:6px;">
+        <strong>Despesas de Alimentação hoje</strong>
+        <div id="lista-alimentacao" style="margin-top:6px; max-height:160px; overflow:auto;"></div>
+        <div style="margin-top:8px;">Total acumulado: <span id="total-alimentacao">R$ 0,00</span></div>
+      </div>
+
+      <!-- Nota fiscal -->
+      <label>Nota fiscal</label><span id="nome-arquivo" style="margin-top: 2px; display: block; color: #0e8e6e; font-size: 0.9em;"></span>
+      <div class="nota-fiscal-buttons">
+        <button type="button" id="btn-capturar">📷 Fotografar</button>
+        <button type="button" id="btn-selecionar">📁 Selecionar</button>
+      </div>
+
+      <input type="file" id="nota_fiscal_camera" name="nota_fiscal" accept="image/*" capture="environment" style="display:none" />
+      <input type="file" id="nota_fiscal_arquivo" name="nota_fiscal" accept="image/*" style="display:none" />
+      <input type="text" id="nota_fiscal_url" name="nota_fiscal_url" style="display:none" />
+
+      <!-- Botão -->
+      <button type="submit">Enviar despesa</button>
+    </form>
+  </div>
+
+  <!-- Botão circular voltar -->
+  <a href="https://registrodespesas.vercel.app/relatorio.html" id="btn-voltar" title="Voltar">
+    <img src="invoice.svg" alt="Ícone Voltar" />
+  </a>
+
+</body>
+</html>
