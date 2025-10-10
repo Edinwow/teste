@@ -14,6 +14,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
             link.classList.add('active');
             document.getElementById(tabId).classList.add('active');
+
+            if (tabId === 'registrar') {
+                configurarDataAtual();
+            }
         });
     });
 
@@ -49,6 +53,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const selectGrupo = document.getElementById('grupo');
     const inputValor = document.getElementById('valor');
     const inputData = document.getElementById('data');
+    const nomeArquivoSpan = document.getElementById('nome-arquivo');
+    const inputCamera = document.getElementById('nota_fiscal_camera');
+    const inputArquivo = document.getElementById('nota_fiscal_arquivo');
 
     // ===============================
     // FUNÇÕES DE INICIALIZAÇÃO E POPULAÇÃO
@@ -84,13 +91,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function popularCategorias() {
         if (selectGrupo) {
-            selectGrupo.innerHTML = '<option value="">Selecione...</option>';
+            selectGrupo.innerHTML = '';
             categorias.forEach(cat => {
                 const opt = document.createElement('option');
                 opt.value = cat;
                 opt.textContent = cat;
                 selectGrupo.appendChild(opt);
             });
+            selectGrupo.value = 'Alimentação';
         }
     }
 
@@ -113,7 +121,22 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function configurarDataAtual() {
-        if (inputData) inputData.valueAsDate = new Date();
+        if (inputData) {
+            const formatter = new Intl.DateTimeFormat('en-CA', {
+                timeZone: 'America/Sao_Paulo',
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit'
+            });
+            inputData.value = formatter.format(new Date());
+        }
+    }
+
+    function atualizarNomeArquivo(input) {
+        if (input.files.length > 0) {
+            nomeArquivoSpan.textContent = input.files[0].name;
+            nomeArquivoSpan.classList.add('selected');
+        }
     }
 
     // ===============================
@@ -122,9 +145,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function carregarDadosDespesas() {
         try {
-            const resp = await fetch(`${DESPESAS_CSV_URL}&t=${new Date().getTime()}`); // Evita cache
+            const resp = await fetch(`${DESPESAS_CSV_URL}&t=${new Date().getTime()}`);
             const csvText = await resp.text();
-            despesasData = Papa.parse(csvText, { header: true, skipEmptyLines: true }).data;
+            despesasData = Papa.parse(csvText, {
+                header: true,
+                skipEmptyLines: true
+            }).data;
         } catch (error) {
             console.error("Não foi possível carregar os dados de despesas.", error);
             alert("Não foi possível conectar à planilha de despesas. A verificação de limite pode não funcionar.");
@@ -166,8 +192,7 @@ document.addEventListener('DOMContentLoaded', () => {
         spanLimite.classList.toggle('warning', restante <= 50 && restante > 0);
         spanLimite.classList.toggle('danger', restante <= 0);
     }
-    
-    // Configuração do formulário de envio
+
     if (formRegistro) {
         formRegistro.addEventListener('submit', async function(e) {
             e.preventDefault();
@@ -183,20 +208,26 @@ document.addEventListener('DOMContentLoaded', () => {
             formData.forEach((value, key) => params.append(key, value));
 
             try {
-                await fetch(WEBAPP_URL, { method: 'POST', body: params });
-            } catch (err) { console.error("Erro no envio:", err); }
+                await fetch(WEBAPP_URL, {
+                    method: 'POST',
+                    body: params
+                });
+            } catch (err) {
+                console.error("Erro no envio:", err);
+            }
 
             alert('Despesa registrada com sucesso!');
             const usuarioSelecionado = selectNome.value;
             formRegistro.reset();
             selectNome.value = usuarioSelecionado;
             configurarDataAtual();
-            document.getElementById('nome-arquivo').textContent = 'Nenhum arquivo selecionado';
-            
+            nomeArquivoSpan.textContent = 'Nenhum arquivo selecionado';
+            nomeArquivoSpan.classList.remove('selected');
+            popularCategorias();
+
             submitBtn.disabled = false;
             submitBtn.textContent = 'Adicionar Despesa';
-            
-            // Recarrega os dados e atualiza o limite
+
             await carregarDadosDespesas();
             atualizarLimiteAlimentacao();
         });
@@ -212,7 +243,9 @@ document.addEventListener('DOMContentLoaded', () => {
     inputData?.addEventListener('change', atualizarLimiteAlimentacao);
     selectGrupo?.addEventListener('change', atualizarLimiteAlimentacao);
 
-    // Inicialização da aplicação
+    inputCamera?.addEventListener('change', () => atualizarNomeArquivo(inputCamera));
+    inputArquivo?.addEventListener('change', () => atualizarNomeArquivo(inputArquivo));
+
     popularUsuarios();
     popularFormasPagamento();
     popularCategorias();
@@ -220,7 +253,9 @@ document.addEventListener('DOMContentLoaded', () => {
     configurarDataAtual();
     carregarDadosDespesas().then(atualizarLimiteAlimentacao);
 
-    // Lógica do Relatório (mantida como estava, mas usando os dados já carregados)
+    // ===============================
+    // LÓGICA DE GERAÇÃO DE RELATÓRIO (MODIFICADA)
+    // ===============================
     const formRelatorio = document.getElementById('report-form');
     if (formRelatorio) {
         const selectNomeRelatorio = document.getElementById('relatorio-nomeSelect');
@@ -232,16 +267,153 @@ document.addEventListener('DOMContentLoaded', () => {
                 imgFuncionarioRelatorio.src = usuario.imagem;
             }
         });
-        
+
         formRelatorio.addEventListener('submit', (e) => {
             e.preventDefault();
-            // A lógica de gerarPDF usa a variável global `despesasData`
-            // que já foi carregada no início.
-            gerarPDF(); 
+            gerarRelatoriosPorCategoria();
         });
 
-        async function gerarPDF() {
-            // ... (A função gerarPDF continua a mesma, pois já usa `despesasData`)
+        async function gerarRelatoriosPorCategoria() {
+            const { jsPDF } = window.jspdf;
+            const nomeSelecionado = selectNomeRelatorio.value;
+            const dataInicio = document.getElementById('dataInicio').value;
+            const dataFim = document.getElementById('dataFim').value;
+
+            // 1. Filtra todos os dados relevantes (usuário e data)
+            const dadosFiltrados = despesasData.filter(row => {
+                if (!row.data || !row.descricao || !row.nota_fiscal_url || !row.nome) return false;
+                const partes = row.data.split('/');
+                if (partes.length !== 3) return false;
+                const dataRow = `${partes[2]}-${partes[1].padStart(2, '0')}-${partes[0].padStart(2, '0')}`;
+                const dentroDoIntervalo = (!dataInicio || dataRow >= dataInicio) && (!dataFim || dataRow <= dataFim);
+                const nomeConfere = row.nome.trim() === nomeSelecionado;
+                return dentroDoIntervalo && nomeConfere;
+            });
+
+            if (dadosFiltrados.length === 0) {
+                alert('Nenhum dado encontrado para os filtros selecionados.');
+                return;
+            }
+
+            // 2. Agrupa os dados filtrados por categoria
+            const despesasPorCategoria = dadosFiltrados.reduce((acc, despesa) => {
+                const categoria = despesa.grupo || 'Sem Categoria';
+                if (!acc[categoria]) {
+                    acc[categoria] = [];
+                }
+                acc[categoria].push(despesa);
+                return acc;
+            }, {});
+
+            // 3. Gera um PDF para cada categoria encontrada
+            for (const categoria in despesasPorCategoria) {
+                const pdf = new jsPDF();
+                const despesasDaCategoria = despesasPorCategoria[categoria];
+                let totalCategoria = 0;
+
+                // --- PÁGINA 1: RECIBO / RESUMO ---
+                pdf.setFont('helvetica', 'bold');
+                pdf.setFontSize(18);
+                pdf.text(`Relatório de Despesas - ${categoria}`, 105, 20, { align: 'center' });
+
+                pdf.setFont('helvetica', 'normal');
+                pdf.setFontSize(12);
+                pdf.text(`Funcionário: ${nomeSelecionado}`, 14, 35);
+                pdf.text(`Período: ${dataInicio ? dataInicio.split('-').reverse().join('/') : 'N/A'} a ${dataFim ? dataFim.split('-').reverse().join('/') : 'N/A'}`, 14, 42);
+
+                let yPosition = 60;
+                pdf.setFont('helvetica', 'bold');
+                pdf.text('Data', 14, yPosition);
+                pdf.text('Descrição', 50, yPosition);
+                pdf.text('Valor', 180, yPosition, { align: 'right' });
+                yPosition += 5;
+                pdf.line(14, yPosition, 196, yPosition); // Linha separadora
+                yPosition += 8;
+
+                pdf.setFont('helvetica', 'normal');
+                despesasDaCategoria.forEach(despesa => {
+                    pdf.text(despesa.data, 14, yPosition);
+                    pdf.text(pdf.splitTextToSize(despesa.descricao, 100), 50, yPosition); // Quebra de linha automática
+                    
+                    let valorStr = (despesa.valor || 'R$ 0,00').replace(/[^\d,]/g, '').replace(',', '.');
+                    let valor = parseFloat(valorStr);
+                    if (!isNaN(valor)) {
+                        totalCategoria += valor;
+                    }
+                    pdf.text(despesa.valor, 180, yPosition, { align: 'right' });
+                    yPosition += 12; // Aumenta o espaço para acomodar descrições longas
+                    if (yPosition > 270) { // Se a lista for muito longa, cria nova página
+                        pdf.addPage();
+                        yPosition = 20;
+                    }
+                });
+
+                yPosition += 5;
+                pdf.line(14, yPosition, 196, yPosition);
+                yPosition += 8;
+                pdf.setFont('helvetica', 'bold');
+                pdf.text('Total:', 140, yPosition);
+                pdf.text(`R$ ${totalCategoria.toFixed(2).replace('.', ',')}`, 180, yPosition, { align: 'right' });
+
+                // --- PÁGINAS SEGUINTES: COMPROVANTES ---
+                for (const row of despesasDaCategoria) {
+                    pdf.addPage();
+                    const pageHeight = pdf.internal.pageSize.getHeight();
+                    
+                    pdf.setFont('helvetica', 'bold');
+                    pdf.setFontSize(16);
+                    pdf.text(row.descricao, 14, 20);
+
+                    pdf.setFont('helvetica', 'normal');
+                    pdf.setFontSize(12);
+                    const dataValor = `${row.data}${row.valor ? ' | ' + row.valor : ''}`;
+                    pdf.text(dataValor, 14, 30);
+                    
+                    try {
+                        const imageData = await carregarImagemComoBase64(row.nota_fiscal_url);
+                        const img = new Image();
+                        img.src = imageData;
+                        
+                        await new Promise(resolve => {
+                            img.onload = () => {
+                                const marginTop = 40;
+                                const availableHeight = pageHeight - marginTop - 10;
+                                const scale = Math.min(190 / img.width, availableHeight / img.height);
+                                const imgWidth = img.width * scale;
+                                const imgHeight = img.height * scale;
+                                const xOffset = (210 - imgWidth) / 2; // Centraliza a imagem
+
+                                pdf.addImage(imageData, 'JPEG', xOffset, marginTop, imgWidth, imgHeight);
+                                resolve();
+                            };
+                            img.onerror = () => resolve(); // Continua mesmo se a imagem falhar
+                        });
+                    } catch (e) {
+                        pdf.setTextColor(255, 0, 0);
+                        pdf.text('Erro ao carregar a imagem do comprovante.', 14, 50);
+                    }
+                }
+
+                // 4. Salva o PDF da categoria atual
+                pdf.save(`relatorio_${nomeSelecionado}_${categoria}.pdf`);
+            }
         }
+    }
+
+    function carregarImagemComoBase64(url) {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.crossOrigin = "Anonymous";
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                canvas.width = img.width;
+                canvas.height = img.height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0);
+                resolve(canvas.toDataURL('image/jpeg'));
+            };
+            img.onerror = () => reject(new Error('Erro ao carregar imagem: ' + url));
+            img.src = url;
+        });
     }
 });
