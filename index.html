@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Painel de Gastos da Moto v5.3</title>
+    <title>Painel de Gastos da Moto v5.4</title>
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
@@ -296,46 +296,43 @@
             }).filter(d => d.date);
 
             // --- CÁLCULOS GERAIS ---
-            let totalCost = 0;
-            const costsByCategory = {};
-            const monthlySpending = {};
-
-            for (const item of processedData) {
-                if (item.isCost) {
-                    const value = Number(item.value) || 0;
-                    totalCost += value;
-                    costsByCategory[item.Categoria] = (costsByCategory[item.Categoria] || 0) + value;
-                    const month = `${item.date.getFullYear()}-${(item.date.getMonth() + 1).toString().padStart(2, '0')}`;
-                    monthlySpending[month] = (monthlySpending[month] || 0) + value;
-                }
-            }
+            const totalCost = processedData.filter(d => d.isCost).reduce((a, c) => a + (Number(c.value) || 0), 0);
+            const costsByCategory = processedData.filter(d => d.isCost).reduce((a, c) => ({...a, [c.Categoria]: (a[c.Categoria] || 0) + (Number(c.value) || 0) }), {});
+            const monthlySpending = processedData.filter(d => d.isCost).reduce((a, c) => {
+                const month = `${c.date.getFullYear()}-${(c.date.getMonth() + 1).toString().padStart(2, '0')}`;
+                return {...a, [month]: (a[month] || 0) + (Number(c.value) || 0) };
+            }, {});
             document.getElementById('total-cost').textContent = formatCurrency(totalCost);
 
-            // --- CÁLCULOS DE GASOLINA ---
-            const fuelStops = {};
-            let gasTotalCost = 0;
+            // --- CÁLCULOS DE GASOLINA (LÓGICA REFEITA) ---
+            const gasolineData = processedData.filter(d => d.Categoria === 'Gasolina');
+            
+            // 1. Calcular Custo Total de forma separada e segura
+            const gasTotalCost = gasolineData
+                .filter(d => d.Chave.toLowerCase().includes('total'))
+                .reduce((acc, curr) => acc + (Number(curr.value) || 0), 0);
+            
+            document.getElementById('gas-total-cost').textContent = formatCurrency(gasTotalCost);
 
-            processedData.filter(d => d.Categoria === 'Gasolina').forEach(d => {
+            // 2. Agrupar dados por data para cálculos de consumo
+            const fuelStops = {};
+            gasolineData.forEach(d => {
                 const dateStr = d.Data;
                 if (!fuelStops[dateStr]) fuelStops[dateStr] = { date: d.date };
-
                 const cleanKey = d.Chave.toLowerCase();
                 const value = Number(d.value) || 0;
 
-                if (cleanKey.includes('quilometragem')) {
-                    fuelStops[dateStr].km = value;
-                } else if (cleanKey.includes('total')) {
-                    fuelStops[dateStr].totalValue = value;
-                    gasTotalCost += value; // Soma o valor total aqui
-                } else if (cleanKey.includes('litro')) {
-                    fuelStops[dateStr].pricePerLiter = value;
-                }
+                if (cleanKey.includes('quilometragem')) fuelStops[dateStr].km = value;
+                else if (cleanKey.includes('total')) fuelStops[dateStr].totalValue = value;
+                else if (cleanKey.includes('litro')) fuelStops[dateStr].pricePerLiter = value;
             });
 
-            document.getElementById('gas-total-cost').textContent = formatCurrency(gasTotalCost);
-            
-            const validFuelStops = Object.values(fuelStops).filter(d => d.km && d.totalValue && d.pricePerLiter && d.km < 20000).sort((a, b) => a.date - b.date);
-            
+            // 3. Filtrar apenas os abastecimentos completos
+            const validFuelStops = Object.values(fuelStops)
+                .filter(d => d.km && d.totalValue && d.pricePerLiter && d.km < 20000)
+                .sort((a, b) => a.date - b.date);
+
+            // 4. Calcular consumo e litros a partir dos dados válidos
             const consumptionData = [];
             for (let i = 1; i < validFuelStops.length; i++) {
                 const dist = validFuelStops[i].km - validFuelStops[i - 1].km;
@@ -351,7 +348,7 @@
             const gasTotalLiters = validFuelStops.reduce((a, c) => a + (c.totalValue / c.pricePerLiter), 0);
             document.getElementById('gas-total-liters').innerHTML = `${formatNumber(gasTotalLiters, 1)} <span class="unit">L</span>`;
             document.getElementById('gas-avg-price').textContent = formatCurrency(gasTotalLiters > 0 ? gasTotalCost / gasTotalLiters : 0);
-
+            
             // --- CÁLCULOS DE ÓLEO ---
             const oleoCosts = processedData.filter(d => d.Categoria === 'Óleo' && d.Chave === 'Valor');
             const oleoKms = processedData.filter(d => d.Categoria === 'Óleo' && d.Chave === 'Quilometragem').sort((a, b) => a.date - b.date);
@@ -364,6 +361,7 @@
             document.getElementById('oleo-avg-cost').textContent = formatCurrency(oleoCosts.length > 0 ? oleoTotalCost / oleoCosts.length : 0);
             document.getElementById('oleo-avg-km').innerHTML = `${formatNumber(oleoAvgKm, 0)} <span class="unit">km</span>`;
             const oleoTableBody = document.getElementById('oleo-table-body');
+            oleoTableBody.innerHTML = ''; // Limpa a tabela antes de preencher
             oleoKms.forEach((entry, i) => {
                 const kmSinceLast = i > 0 ? entry.value - oleoKms[i - 1].value : null;
                 let row = oleoTableBody.insertRow();
@@ -378,11 +376,13 @@
             document.getElementById('infracao-count').textContent = infracoes.length;
             document.getElementById('infracao-total-pontos').textContent = infracoes.reduce((a, c) => a + (parseInt(c.Pontos) || 0), 0);
             const infracoesTableBody = document.getElementById('infracoes-table-body');
+            infracoesTableBody.innerHTML = '';
             infracoes.forEach(i => { let r=infracoesTableBody.insertRow(); r.insertCell(0).textContent=i.Data;r.insertCell(1).textContent=i.Motivo;r.insertCell(2).textContent=i.Tipo;r.insertCell(3).textContent=i.Pontos;r.insertCell(4).textContent=formatCurrency(i.Valor); });
             
             const outrosData = processedData.filter(d => d.Categoria === 'Outros').sort((a,b) => b.date - a.date);
             document.getElementById('outros-total-cost').textContent = formatCurrency(costsByCategory['Outros'] || 0);
             const outrosTableBody = document.getElementById('outros-table-body');
+            outrosTableBody.innerHTML = '';
             outrosData.forEach(item => {
                 let row = outrosTableBody.insertRow();
                 row.insertCell(0).textContent = item.Data;
@@ -403,14 +403,18 @@
                 dataLabels: { enabled: false }
             };
             
+            document.querySelector("#category-chart").innerHTML = '';
             const sortedCategories = Object.entries(costsByCategory).sort(([,a],[,b]) => b-a);
             new ApexCharts(document.querySelector("#category-chart"), { ...chartOptions, series: [{ data: sortedCategories.map(c => c[1]) }], chart: { ...chartOptions.chart, type: 'bar' }, plotOptions: { bar: { borderRadius: 4, horizontal: true } }, xaxis: { categories: sortedCategories.map(c => c[0]), labels: { formatter: val => formatCurrency(val) } }, tooltip: { y: { formatter: val => formatCurrency(val) } } }).render();
 
+            document.querySelector("#monthly-spending-chart").innerHTML = '';
             const sortedMonths = Object.keys(monthlySpending).sort();
-            new ApexCharts(document.querySelector("#monthly-spending-chart"), { ...chartOptions, series: [{ name: 'Gastos', data: sortedMonths.map(m => monthlySpending[m]) }], chart: { ...chartOptions.chart, type: 'area', height: 350 }, colors: [chartOptions.accent_color], xaxis: { type: 'category', categories: sortedMonths }, yaxis: { labels: { formatter: val => formatCurrency(val) } }, tooltip: { ...chartOptions.tooltip, y: { formatter: val => formatCurrency(val) } } }).render();
+            new ApexCharts(document.querySelector("#monthly-spending-chart"), { ...chartOptions, series: [{ name: 'Gastos', data: sortedMonths.map(m => monthlySpending[m]) }], chart: { ...chartOptions.chart, type: 'area', height: 350 }, colors: ['#3498db'], xaxis: { type: 'category', categories: sortedMonths }, yaxis: { labels: { formatter: val => formatCurrency(val) } }, tooltip: { ...chartOptions.tooltip, y: { formatter: val => formatCurrency(val) } } }).render();
 
+            document.querySelector("#fuel-price-chart").innerHTML = '';
             new ApexCharts(document.querySelector("#fuel-price-chart"), { ...chartOptions, series: [{ name: 'Valor/litro', data: validFuelStops.map(d => [d.date.getTime(), d.pricePerLiter]) }], chart: { ...chartOptions.chart, type: 'line', height: 350 }, colors: ['#f39c12'], xaxis: { type: 'datetime' }, yaxis: { labels: { formatter: val => formatCurrency(val) } }, tooltip: { ...chartOptions.tooltip, y: { formatter: val => formatCurrency(val) } } }).render();
             
+            document.querySelector("#fuel-consumption-chart").innerHTML = '';
             new ApexCharts(document.querySelector("#fuel-consumption-chart"), { ...chartOptions, series: [{ name: 'Km/L', data: consumptionData.map(d => [d.date.getTime(), d.kpl]) }], chart: { ...chartOptions.chart, type: 'area', height: 350 }, colors: ['#2ecc71'], xaxis: { type: 'datetime' }, yaxis: { labels: { formatter: val => formatNumber(val, 1) } }, tooltip: { ...chartOptions.tooltip, y: { formatter: val => `${formatNumber(val, 1)} Km/L` } } }).render();
         }
     </script>
