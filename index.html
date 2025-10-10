@@ -11,13 +11,14 @@
         :root {
             --background-color: #f4f7fa;
             --card-background-color: #ffffff;
-            --text-color: #333;
-            --primary-color: #4a90e2;
-            --secondary-color: #50e3c2;
+            --text-color: #2c3e50;
+            --text-light-color: #8a99a8;
+            --primary-color: #3498db;
+            --secondary-color: #2ecc71;
             --danger-color: #e74c3c;
             --warning-color: #f1c40f;
-            --shadow-color: rgba(0, 0, 0, 0.08);
-            --border-color: #e8e8e8;
+            --shadow-color: rgba(44, 62, 80, 0.1);
+            --border-color: #e8edf3;
         }
 
         body {
@@ -29,7 +30,7 @@
         }
 
         .container {
-            max-width: 1100px;
+            max-width: 1200px;
             margin: auto;
         }
 
@@ -40,11 +41,10 @@
 
         .header h1 {
             font-size: 2.5rem;
-            color: #111;
+            color: #1d2d3d;
             font-weight: 700;
         }
         
-        /* Sistema de Abas */
         .tabs {
             display: flex;
             border-bottom: 2px solid var(--border-color);
@@ -58,7 +58,7 @@
             background-color: transparent;
             font-size: 1rem;
             font-weight: 600;
-            color: #777;
+            color: var(--text-light-color);
             position: relative;
             transition: color 0.3s ease;
         }
@@ -85,23 +85,37 @@
         
         .tab-content {
             display: none;
+            animation: fadeIn 0.5s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
         
         .tab-content.active {
             display: block;
         }
         
-        /* Cards */
         .card {
             background-color: var(--card-background-color);
             padding: 25px;
             border-radius: 12px;
-            box-shadow: 0 5px 15px var(--shadow-color);
+            box-shadow: 0 5px 20px var(--shadow-color);
+            margin-bottom: 20px;
         }
         
-        .grid {
+        .card h2 {
+            margin-top: 0;
+            font-size: 1.25rem;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .grid-layout {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
             gap: 20px;
         }
 
@@ -116,8 +130,9 @@
         .indicator p {
             margin: 0 0 5px 0;
             font-size: 0.9rem;
-            color: #666;
+            color: var(--text-light-color);
             font-weight: 500;
+            text-transform: uppercase;
         }
 
         .indicator .value {
@@ -128,7 +143,22 @@
         
         .chart-container {
             margin-top: 30px;
-            max-height: 400px; /* Limita a altura do gráfico para melhor visualização */
+            height: 350px;
+        }
+
+        .infraction-card {
+            border: 1px solid var(--border-color);
+            border-left: 5px solid var(--danger-color);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        .infraction-card h3 {
+            margin: 0 0 10px 0;
+        }
+        .infraction-details {
+            display: flex;
+            justify-content: space-between;
         }
     </style>
 </head>
@@ -149,6 +179,7 @@
 
         <div id="Geral" class="tab-content active">
              <div class="card">
+                <h2>Resumo Financeiro</h2>
                 <div class="indicator-container">
                     <div class="indicator">
                         <p>Gasto Total (sem o valor da moto)</p>
@@ -167,6 +198,7 @@
 
         <div id="Gasolina" class="tab-content">
             <div class="card">
+                <h2>Indicadores de Combustível</h2>
                 <div class="indicator-container">
                     <div class="indicator">
                         <p>Gasto Total</p>
@@ -181,45 +213,85 @@
                         <span class="value" id="preco-medio-litro"></span>
                     </div>
                 </div>
-                <div class="chart-container">
-                     <canvas id="gasolinaChart"></canvas>
-                </div>
-                 <div class="chart-container">
-                    <canvas id="precoLitroChart"></canvas>
+            </div>
+            <div class="card">
+                <h2>Análise de Gastos e Preços</h2>
+                <div class="grid-layout">
+                    <div class="chart-container">
+                         <canvas id="gasolinaChart"></canvas>
+                    </div>
+                     <div class="chart-container">
+                        <canvas id="precoLitroChart"></canvas>
+                    </div>
                 </div>
             </div>
         </div>
 
         <div id="Oleo" class="tab-content">
             <div class="card">
+                <h2>Indicadores de Óleo</h2>
                 <div class="indicator-container">
                      <div class="indicator">
-                        <p>Gasto Total com Óleo</p>
+                        <p>Gasto Total</p>
                         <span class="value" id="total-oleo"></span>
                     </div>
+                    <div class="indicator">
+                        <p>Preço Médio / Troca</p>
+                        <span class="value" id="preco-medio-oleo"></span>
+                    </div>
+                    <div class="indicator">
+                        <p>KM Médio / Troca</p>
+                        <span class="value" id="km-medio-oleo"></span>
+                    </div>
+                </div>
+            </div>
+            <div class="card">
+                <h2>Intervalo entre Trocas de Óleo</h2>
+                <div class="chart-container">
+                    <canvas id="oleoIntervaloKmChart"></canvas>
                 </div>
             </div>
         </div>
         
         <div id="Outros" class="tab-content">
             <div class="card">
-                <div class="indicator-container">
-                     <div class="indicator">
-                        <p>Gasto Total (Outros)</p>
+                <h2>Indicadores de Outros Gastos</h2>
+                 <div class="indicator-container">
+                    <div class="indicator">
+                        <p>Total (sem valor da moto)</p>
                         <span class="value" id="total-outros"></span>
                     </div>
+                </div>
+            </div>
+            <div class="card">
+                <h2>Top 10 Maiores Gastos (Outros)</h2>
+                <div class="chart-container" style="height: 450px;">
+                    <canvas id="outrosTopChart"></canvas>
                 </div>
             </div>
         </div>
         
         <div id="Infracoes" class="tab-content">
             <div class="card">
-                <div class="indicator-container">
-                     <div class="indicator">
-                        <p>Gasto Total com Infrações</p>
+                <h2>Resumo de Infrações</h2>
+                 <div class="indicator-container">
+                    <div class="indicator">
+                        <p>Gasto Total</p>
                         <span class="value" id="total-infracoes"></span>
                     </div>
+                    <div class="indicator">
+                        <p>Total de Infrações</p>
+                        <span class="value" id="contagem-infracoes"></span>
+                    </div>
+                     <div class="indicator">
+                        <p>Total de Pontos</p>
+                        <span class="value" id="total-pontos"></span>
+                    </div>
                 </div>
+            </div>
+            <div class="card">
+                <h2>Detalhes</h2>
+                <div id="infracoes-lista"></div>
             </div>
         </div>
     </div>
@@ -436,167 +508,215 @@ Outros,10/10/2025,Vela,60.00`;
 
         // --- PROCESSAMENTO DE DADOS ---
         const formatCurrency = (value) => value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-        const formatNumber = (value, decimals = 2) => value.toFixed(decimals).replace('.', ',');
+        const formatNumber = (value, decimals = 0) => value.toFixed(decimals).replace('.', ',');
 
         const rows = rawData.trim().split('\n').slice(1);
         const data = rows.map(row => {
-            const [Categoria, Data, Chave, Valor] = row.split(',');
-            return { Categoria, Data, Chave, Valor: parseFloat(Valor.replace(',', '.')) };
+            const columns = row.split(',');
+            return { Categoria: columns[0], Data: columns[1], Chave: columns[2], Valor: columns[3] };
         });
 
         const gastos = {};
         data.forEach(item => {
-            if (!gastos[item.Categoria]) {
-                gastos[item.Categoria] = [];
-            }
+            if (!gastos[item.Categoria]) { gastos[item.Categoria] = []; }
             gastos[item.Categoria].push(item);
         });
         
         // --- CÁLCULOS ---
         // Gasolina
         const gasolinaData = gastos['Gasolina'] || [];
-        const totalGasolina = gasolinaData.filter(g => g.Chave === 'Valor total').reduce((sum, item) => sum + item.Valor, 0);
-        const kmRegistros = gasolinaData.filter(g => g.Chave === 'Quilometragem').map(g => g.Valor);
+        const totalGasolina = gasolinaData.filter(g => g.Chave === 'Valor total').reduce((sum, item) => sum + parseFloat(item.Valor), 0);
+        const kmRegistros = gasolinaData.filter(g => g.Chave === 'Quilometragem').map(g => parseFloat(g.Valor));
         const kmMax = Math.max(...kmRegistros, 0);
         const kmMin = Math.min(...kmRegistros, 0);
         const kmTotal = kmMax - kmMin;
         
         const precosLitro = gasolinaData.filter(g => g.Chave === 'Valor do litro');
-        const precoMedioLitro = precosLitro.reduce((sum, item) => sum + item.Valor, 0) / precosLitro.length;
+        const precoMedioLitro = precosLitro.reduce((sum, item) => sum + parseFloat(item.Valor), 0) / precosLitro.length;
         
         let totalLitros = 0;
         gasolinaData.forEach(item => {
              if(item.Chave === 'Valor total') {
                 const precoDoDia = gasolinaData.find(p => p.Data === item.Data && p.Chave === 'Valor do litro');
-                if(precoDoDia) { totalLitros += item.Valor / precoDoDia.Valor; }
+                if(precoDoDia) { totalLitros += parseFloat(item.Valor) / parseFloat(precoDoDia.Valor); }
              }
         });
         const consumoMedio = kmTotal / totalLitros;
+        
+        // Óleo
+        const oleoData = gastos['Óleo'] || [];
+        const oleoValores = oleoData.filter(o => o.Chave === 'Valor').map(v => parseFloat(v.Valor));
+        const totalOleo = oleoValores.reduce((sum, v) => sum + v, 0);
+        const precoMedioOleo = totalOleo / oleoValores.length;
+        
+        const oleoKmRegistros = oleoData.filter(o => o.Chave === 'Quilometragem').map(v => parseFloat(v.Valor)).sort((a, b) => a - b);
+        const kmIntervalosOleo = [];
+        for (let i = 1; i < oleoKmRegistros.length; i++) {
+            kmIntervalosOleo.push(oleoKmRegistros[i] - oleoKmRegistros[i-1]);
+        }
+        const kmMedioOleo = kmIntervalosOleo.reduce((sum, v) => sum + v, 0) / kmIntervalosOleo.length;
 
-        // Outras categorias
-        const totalOleo = (gastos['Óleo'] || []).filter(o => o.Chave === 'Valor').reduce((sum, item) => sum + item.Valor, 0);
-        const totalInfracoes = (gastos['Infração'] || []).filter(i => i.Chave === 'Valor').reduce((sum, item) => sum + item.Valor, 0);
-        const valorMoto = (gastos['Outros'] || []).find(o => o.Chave === 'Moto')?.Valor || 0;
-        const totalOutros = (gastos['Outros'] || []).reduce((sum, item) => sum + item.Valor, 0) - valorMoto;
+        // Infrações
+        const infracoesData = gastos['Infração'] || [];
+        const totalInfracoes = infracoesData.filter(i => i.Chave === 'Valor').reduce((sum, item) => sum + parseFloat(item.Valor), 0);
+        const contagemInfracoes = infracoesData.filter(i => i.Chave === 'Valor').length;
+        const totalPontos = infracoesData.filter(i => i.Chave === 'Pontos').reduce((sum, item) => sum + parseInt(item.Valor), 0);
 
+        // Outros
+        const outrosData = gastos['Outros'] || [];
+        const valorMoto = parseFloat(outrosData.find(o => o.Chave === 'Moto')?.Valor || 0);
+        const totalOutros = outrosData.reduce((sum, item) => sum + parseFloat(item.Valor), 0) - valorMoto;
+        const outrosTop = outrosData.filter(o => o.Chave !== 'Moto').sort((a,b) => parseFloat(b.Valor) - parseFloat(a.Valor)).slice(0, 10);
+        
         // Geral
         const totalGeralSemMoto = totalGasolina + totalOleo + totalInfracoes + totalOutros;
         const custoKmGeral = totalGeralSemMoto / kmTotal;
 
         // --- ATUALIZAÇÃO DO HTML ---
         document.getElementById('total-gasolina').textContent = formatCurrency(totalGasolina);
-        document.getElementById('consumo-medio').textContent = `${formatNumber(consumoMedio, 2)} km/L`;
+        document.getElementById('consumo-medio').textContent = `${(consumoMedio).toFixed(2)} km/L`;
         document.getElementById('preco-medio-litro').textContent = formatCurrency(precoMedioLitro);
         
         document.getElementById('total-oleo').textContent = formatCurrency(totalOleo);
+        document.getElementById('preco-medio-oleo').textContent = formatCurrency(precoMedioOleo);
+        document.getElementById('km-medio-oleo').textContent = `${formatNumber(kmMedioOleo)} km`;
+
         document.getElementById('total-outros').textContent = formatCurrency(totalOutros);
+        
         document.getElementById('total-infracoes').textContent = formatCurrency(totalInfracoes);
+        document.getElementById('contagem-infracoes').textContent = contagemInfracoes;
+        document.getElementById('total-pontos').textContent = totalPontos;
+
+        infracoesData.filter(i => i.Chave === 'Motivo').forEach(inf => {
+            const data = inf.Data;
+            const motivo = inf.Valor;
+            const tipo = infracoesData.find(i => i.Data === data && i.Chave === 'Tipo').Valor;
+            const valor = parseFloat(infracoesData.find(i => i.Data === data && i.Chave === 'Valor').Valor);
+            const pontos = infracoesData.find(i => i.Data === data && i.Chave === 'Pontos').Valor;
+
+            document.getElementById('infracoes-lista').innerHTML += `
+                <div class="infraction-card">
+                    <h3>${motivo}</h3>
+                    <div class="infraction-details">
+                        <span><strong>Data:</strong> ${data}</span>
+                        <span><strong>Tipo:</strong> ${tipo}</span>
+                        <span><strong>Pontos:</strong> ${pontos}</span>
+                        <span><strong>Valor:</strong> ${formatCurrency(valor)}</span>
+                    </div>
+                </div>
+            `;
+        });
         
         document.getElementById('total-geral-sem-moto').textContent = formatCurrency(totalGeralSemMoto);
         document.getElementById('custo-km-geral').textContent = `${formatCurrency(custoKmGeral)}/km`;
 
-        // --- GRÁFICOS ---
+        // --- CONFIGURAÇÃO E CRIAÇÃO DOS GRÁFICOS ---
         Chart.defaults.font.family = "'Inter', sans-serif";
+        Chart.defaults.color = '#8a99a8';
         Chart.defaults.plugins.legend.position = 'bottom';
-        Chart.defaults.plugins.tooltip.backgroundColor = '#333';
-        Chart.defaults.plugins.tooltip.titleFont.size = 14;
-        Chart.defaults.plugins.tooltip.bodyFont.size = 12;
-        Chart.defaults.plugins.tooltip.padding = 10;
-        Chart.defaults.plugins.tooltip.cornerRadius = 5;
-
-        // Função para criar gradientes
-        const createGradient = (ctx, chartArea, color1, color2) => {
-            const gradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
-            gradient.addColorStop(0, color1);
-            gradient.addColorStop(1, color2);
-            return gradient;
-        };
+        Chart.defaults.plugins.tooltip.backgroundColor = '#2c3e50';
+        Chart.defaults.plugins.tooltip.titleFont = { size: 14, weight: 'bold' };
+        Chart.defaults.plugins.tooltip.bodyFont = { size: 12 };
+        Chart.defaults.plugins.tooltip.padding = 12;
+        Chart.defaults.plugins.tooltip.cornerRadius = 8;
+        Chart.defaults.plugins.tooltip.boxPadding = 4;
         
-        // Gráfico Geral (Doughnut)
-        const ctxGeral = document.getElementById('geralChart').getContext('2d');
-        new Chart(ctxGeral, {
-            type: 'doughnut',
+        const commonOptions = {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: { grid: { display: false }, ticks: { color: '#8a99a8' } },
+                y: { grid: { color: '#e8edf3' }, ticks: { color: '#8a99a8' } }
+            },
+            plugins: {
+                title: { display: true, font: { size: 16, weight: 'bold' }, color: '#2c3e50', padding: { bottom: 20 } }
+            }
+        };
+
+        // Gráfico Geral (Barras Horizontais)
+        new Chart(document.getElementById('geralChart'), {
+            type: 'bar',
             data: {
-                labels: ['Gasolina', 'Óleo', 'Infrações', 'Outros'],
+                labels: ['Gasolina', 'Outros', 'Óleo', 'Infrações'],
                 datasets: [{
-                    label: 'Gastos',
-                    data: [totalGasolina, totalOleo, totalInfracoes, totalOutros],
-                    backgroundColor: ['#4a90e2', '#50e3c2', '#e74c3c', '#f5a623'],
-                    borderColor: '#fff',
-                    borderWidth: 3,
+                    label: 'Gasto por Categoria',
+                    data: [totalGasolina, totalOutros, totalOleo, totalInfracoes],
+                    backgroundColor: ['#3498db', '#2ecc71', '#f1c40f', '#e74c3c'],
+                    borderRadius: 6
                 }]
             },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                cutout: '70%',
-                plugins: {
-                    title: { display: true, text: 'Distribuição de Gastos por Categoria', font: { size: 16 } }
-                }
-            }
+            options: { ...commonOptions, indexAxis: 'y', plugins: {...commonOptions.plugins, title: {...commonOptions.plugins.title, text: 'Distribuição de Gastos por Categoria'} } }
         });
         
-        // Gráfico de Gasto Mensal (Bar)
+        // Gráfico de Gasto Mensal (Barras)
         const gastosGasolinaPorMes = {};
         gasolinaData.filter(g => g.Chave === 'Valor total').forEach(g => {
             const [dia, mes, ano] = g.Data.split('/');
             const mesAno = `${mes}/${ano}`;
             if (!gastosGasolinaPorMes[mesAno]) { gastosGasolinaPorMes[mesAno] = 0; }
-            gastosGasolinaPorMes[mesAno] += g.Valor;
+            gastosGasolinaPorMes[mesAno] += parseFloat(g.Valor);
         });
 
-        const ctxGasolina = document.getElementById('gasolinaChart').getContext('2d');
-        new Chart(ctxGasolina, {
+        new Chart(document.getElementById('gasolinaChart'), {
             type: 'bar',
             data: {
                 labels: Object.keys(gastosGasolinaPorMes),
                 datasets: [{
                     label: 'Gasto com Gasolina',
                     data: Object.values(gastosGasolinaPorMes),
-                    backgroundColor: (context) => {
-                        const chart = context.chart;
-                        const { ctx, chartArea } = chart;
-                        if (!chartArea) { return null; }
-                        return createGradient(ctx, chartArea, 'rgba(74, 144, 226, 0.6)', 'rgba(74, 144, 226, 1)');
-                    },
-                    borderRadius: 6,
-                    borderWidth: 0
+                    backgroundColor: '#3498db',
+                    borderRadius: 6
                 }]
             },
-             options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { title: { display: true, text: 'Gasto Mensal com Gasolina', font: { size: 16 } } },
-                scales: { x: { grid: { display: false } }, y: { grid: { color: '#e8e8e8' } } }
-            }
+            options: {...commonOptions, plugins: {...commonOptions.plugins, title: {...commonOptions.plugins.title, text: 'Gasto Mensal com Gasolina'}}}
         });
 
-        // Gráfico de Preço do Litro (Line)
+        // Gráfico de Preço do Litro (Linha)
         const precosLitroData = gasolinaData.filter(p => p.Chave === 'Valor do litro');
-        const ctxPrecoLitro = document.getElementById('precoLitroChart').getContext('2d');
-        new Chart(ctxPrecoLitro, {
+        new Chart(document.getElementById('precoLitroChart'), {
             type: 'line',
             data: {
                 labels: precosLitroData.map(p => p.Data),
                 datasets: [{
                     label: 'Preço do Litro',
-                    data: precosLitroData.map(p => p.Valor),
-                    borderColor: '#f5a623',
-                    backgroundColor: 'rgba(245, 166, 35, 0.1)',
+                    data: precosLitroData.map(p => parseFloat(p.Valor)),
+                    borderColor: '#f1c40f',
+                    backgroundColor: 'rgba(241, 196, 15, 0.1)',
                     fill: true,
-                    tension: 0.4,
-                    pointBackgroundColor: '#f5a623',
-                    pointBorderColor: '#fff',
-                    pointHoverRadius: 7,
-                    pointRadius: 5
+                    tension: 0.4
                 }]
             },
-             options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { title: { display: true, text: 'Evolução do Preço do Litro', font: { size: 16 } } },
-                scales: { x: { grid: { display: false } }, y: { grid: { color: '#e8e8e8' } } }
-            }
+            options: {...commonOptions, plugins: {...commonOptions.plugins, title: {...commonOptions.plugins.title, text: 'Evolução do Preço do Litro'}}}
+        });
+        
+        // Gráfico de Intervalo de KM do Óleo (Barras)
+        new Chart(document.getElementById('oleoIntervaloKmChart'), {
+            type: 'bar',
+            data: {
+                labels: kmIntervalosOleo.map((_, i) => `Troca ${i+1}`),
+                datasets: [{
+                    label: 'KM Rodados',
+                    data: kmIntervalosOleo,
+                    backgroundColor: '#2ecc71',
+                    borderRadius: 6
+                }]
+            },
+            options: {...commonOptions, plugins: {...commonOptions.plugins, title: {...commonOptions.plugins.title, text: 'KM Rodados entre Trocas de Óleo'}}}
+        });
+
+        // Gráfico Top 10 Outros (Barras Horizontais)
+        new Chart(document.getElementById('outrosTopChart'), {
+            type: 'bar',
+            data: {
+                labels: outrosTop.map(o => o.Chave),
+                datasets: [{
+                    label: 'Valor Gasto',
+                    data: outrosTop.map(o => parseFloat(o.Valor)),
+                    backgroundColor: '#9b59b6',
+                    borderRadius: 6
+                }]
+            },
+            options: { ...commonOptions, indexAxis: 'y', plugins: {...commonOptions.plugins, title: {...commonOptions.plugins.title, text: 'Top 10 Maiores Gastos (Outros)'} } }
         });
     </script>
 </body>
