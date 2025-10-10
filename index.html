@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Painel de Gastos da Moto v5.2</title>
+    <title>Painel de Gastos da Moto v5.3</title>
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
@@ -295,11 +295,8 @@
                 return { ...d, date: parseDate(d.Data), value: isNum ? parseValue(val) : val, isCost: ["Valor total", "Valor"].includes(d.Chave) || d.Categoria === 'Outros' };
             }).filter(d => d.date);
 
-            // --- CALCULATIONS ---
-
-            // ** CORREÇÃO: Lógica de soma mais robusta e direta **
+            // --- CÁLCULOS GERAIS ---
             let totalCost = 0;
-            let gasTotalCost = 0;
             const costsByCategory = {};
             const monthlySpending = {};
 
@@ -307,31 +304,36 @@
                 if (item.isCost) {
                     const value = Number(item.value) || 0;
                     totalCost += value;
-
-                    // Acumula por categoria
                     costsByCategory[item.Categoria] = (costsByCategory[item.Categoria] || 0) + value;
-
-                    // Acumula por mês
                     const month = `${item.date.getFullYear()}-${(item.date.getMonth() + 1).toString().padStart(2, '0')}`;
                     monthlySpending[month] = (monthlySpending[month] || 0) + value;
                 }
-                 // Soma específica para gasolina
-                if (item.Categoria === 'Gasolina' && item.Chave === 'Valor total') {
-                    gasTotalCost += (Number(item.value) || 0);
-                }
             }
-            
             document.getElementById('total-cost').textContent = formatCurrency(totalCost);
-            document.getElementById('gas-total-cost').textContent = formatCurrency(gasTotalCost);
-            
+
+            // --- CÁLCULOS DE GASOLINA ---
             const fuelStops = {};
+            let gasTotalCost = 0;
+
             processedData.filter(d => d.Categoria === 'Gasolina').forEach(d => {
                 const dateStr = d.Data;
                 if (!fuelStops[dateStr]) fuelStops[dateStr] = { date: d.date };
-                if (d.Chave === 'Quilometragem') fuelStops[dateStr].km = d.value;
-                if (d.Chave === 'Valor total') fuelStops[dateStr].totalValue = d.value;
-                if (d.Chave === 'Valor do litro') fuelStops[dateStr].pricePerLiter = d.value;
+
+                const cleanKey = d.Chave.toLowerCase();
+                const value = Number(d.value) || 0;
+
+                if (cleanKey.includes('quilometragem')) {
+                    fuelStops[dateStr].km = value;
+                } else if (cleanKey.includes('total')) {
+                    fuelStops[dateStr].totalValue = value;
+                    gasTotalCost += value; // Soma o valor total aqui
+                } else if (cleanKey.includes('litro')) {
+                    fuelStops[dateStr].pricePerLiter = value;
+                }
             });
+
+            document.getElementById('gas-total-cost').textContent = formatCurrency(gasTotalCost);
+            
             const validFuelStops = Object.values(fuelStops).filter(d => d.km && d.totalValue && d.pricePerLiter && d.km < 20000).sort((a, b) => a.date - b.date);
             
             const consumptionData = [];
@@ -350,6 +352,7 @@
             document.getElementById('gas-total-liters').innerHTML = `${formatNumber(gasTotalLiters, 1)} <span class="unit">L</span>`;
             document.getElementById('gas-avg-price').textContent = formatCurrency(gasTotalLiters > 0 ? gasTotalCost / gasTotalLiters : 0);
 
+            // --- CÁLCULOS DE ÓLEO ---
             const oleoCosts = processedData.filter(d => d.Categoria === 'Óleo' && d.Chave === 'Valor');
             const oleoKms = processedData.filter(d => d.Categoria === 'Óleo' && d.Chave === 'Quilometragem').sort((a, b) => a.date - b.date);
             const oleoTotalCost = oleoCosts.reduce((a, c) => a + (Number(c.value) || 0), 0);
@@ -369,6 +372,7 @@
                 row.insertCell(2).textContent = kmSinceLast ? `${formatNumber(kmSinceLast, 1)} km` : 'Primeira troca registrada';
             });
             
+            // --- OUTRAS ABAS ---
             const infracoes = Object.values(processedData.filter(d => d.Categoria === 'Infração').reduce((a, c) => ({...a, [c.Data]: { ...a[c.Data], [c.Chave]: c.value, Data: c.Data } }), {}));
             document.getElementById('infracao-total-cost').textContent = formatCurrency(infracoes.reduce((a, c) => a + (Number(c.Valor) || 0), 0));
             document.getElementById('infracao-count').textContent = infracoes.length;
