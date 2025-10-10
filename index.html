@@ -1,330 +1,603 @@
-<!doctype html>
-<html lang="pt-BR">
+<!DOCTYPE html>
+<html lang="pt-br">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Painel de Gastos — Moto 🏍️</title>
-  <link rel="preconnect" href="https://cdn.jsdelivr.net" />
-  <style>
-    :root{
-      --bg:#fafafa; --card:#ffffff; --muted:#6b7280; --accent:#0f172a;
-      --glass: rgba(15,23,42,0.03);
-      font-family: Inter, system-ui, -apple-system, 'Helvetica Neue', Arial;
-    }
-    html,body{height:100%;margin:0;background:var(--bg);color:var(--accent)}
-    .wrap{max-width:1100px;margin:28px auto;padding:20px}
-    header{display:flex;align-items:center;gap:16px}
-    h1{font-size:20px;margin:0}
-    p.lead{margin:0;color:var(--muted);font-size:13px}
-    .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:18px}
-    .card{background:var(--card);padding:14px;border-radius:12px;box-shadow:0 6px 18px rgba(16,24,40,0.04)}
-    .card.big{grid-column:span 2}
-    .ind{display:flex;justify-content:space-between;align-items:center}
-    .ind .val{font-size:18px;font-weight:700}
-    .muted{color:var(--muted);font-size:13px}
-    .controls{display:flex;gap:10px;align-items:center}
-    select,button{padding:8px 10px;border-radius:8px;border:1px solid rgba(15,23,42,0.06);background:transparent}
-    canvas{width:100% !important;height:260px !important}
-    small{color:var(--muted)}
-    .row{display:flex;gap:12px}
-    .metric{display:flex;flex-direction:column;gap:6px}
-    .metric .k{font-weight:700;font-size:16px}
-    footer{margin-top:16px;color:var(--muted);font-size:13px}
-    @media(max-width:900px){.grid{grid-template-columns:1fr;}.card.big{grid-column:span 1}}
-  </style>
-  <!-- Libraries -->
-  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel de Gastos da Moto</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        
+        :root {
+            --background-color: #f4f7fa;
+            --card-background-color: #ffffff;
+            --text-color: #333;
+            --primary-color: #4a90e2;
+            --secondary-color: #50e3c2;
+            --danger-color: #e74c3c;
+            --warning-color: #f1c40f;
+            --shadow-color: rgba(0, 0, 0, 0.08);
+            --border-color: #e8e8e8;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            color: #111;
+            font-weight: 700;
+        }
+        
+        /* Sistema de Abas */
+        .tabs {
+            display: flex;
+            border-bottom: 2px solid var(--border-color);
+            margin-bottom: 25px;
+        }
+        
+        .tab-button {
+            padding: 12px 20px;
+            cursor: pointer;
+            border: none;
+            background-color: transparent;
+            font-size: 1rem;
+            font-weight: 600;
+            color: #777;
+            position: relative;
+            transition: color 0.3s ease;
+        }
+        
+        .tab-button::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background-color: var(--primary-color);
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+
+        .tab-button.active {
+            color: var(--primary-color);
+        }
+        
+        .tab-button.active::after {
+            transform: scaleX(1);
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        /* Cards */
+        .card {
+            background-color: var(--card-background-color);
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px var(--shadow-color);
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .indicator-container {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            gap: 20px;
+            text-align: center;
+        }
+
+        .indicator p {
+            margin: 0 0 5px 0;
+            font-size: 0.9rem;
+            color: #666;
+            font-weight: 500;
+        }
+
+        .indicator .value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--text-color);
+        }
+        
+        .chart-container {
+            margin-top: 30px;
+            max-height: 400px; /* Limita a altura do gráfico para melhor visualização */
+        }
+    </style>
 </head>
 <body>
-  <div class="wrap">
-    <header>
-      <div>
-        <h1>📊 Painel de Gastos — Minha Moto</h1>
-        <p class="lead">Design minimalista e interativo. Mostra indicadores por categoria e gráficos temporais.</p>
-      </div>
-      <div style="margin-left:auto;display:flex;flex-direction:column;align-items:flex-end">
-        <small>Fonte: Google Sheets (online)</small>
-        <small id="status" class="muted">Carregando dados…</small>
-      </div>
-    </header>
 
-    <div class="grid">
-      <div class="card">
-        <div style="display:flex;justify-content:space-between;align-items:center">
-          <div>
-            <div class="muted">Filtrar categoria</div>
-            <div class="controls" style="margin-top:6px">
-              <select id="categorySelect"></select>
-              <button id="resetBtn">🔁 Reset</button>
-            </div>
-          </div>
-          <div style="text-align:right">
-            <div class="muted">Período</div>
-            <div id="period" style="font-weight:700">—</div>
-          </div>
+    <div class="container">
+        <div class="header">
+            <h1>🏍️ Painel de Controle de Gastos</h1>
         </div>
-      </div>
-
-      <div class="card">
-        <div class="ind">
-          <div>
-            <div class="muted">Total gasto</div>
-            <div class="val" id="totalSpent">R$ 0,00</div>
-            <small class="muted">(soma de Valor/Valor total quando aplicável)</small>
-          </div>
-          <div style="text-align:right">
-            <div class="muted">Entradas</div>
-            <div class="val" id="countEntries">0</div>
-            <small class="muted">registros</small>
-          </div>
+        
+        <div class="tabs">
+            <button class="tab-button active" onclick="openTab(event, 'Geral')">💰 Visão Geral</button>
+            <button class="tab-button" onclick="openTab(event, 'Gasolina')">⛽️ Gasolina</button>
+            <button class="tab-button" onclick="openTab(event, 'Oleo')">🛠️ Óleo</button>
+            <button class="tab-button" onclick="openTab(event, 'Outros')">🔩 Outros</button>
+            <button class="tab-button" onclick="openTab(event, 'Infracoes')">📝 Infrações</button>
         </div>
-      </div>
 
-      <div class="card">
-        <div class="ind">
-          <div>
-            <div class="muted">Último gasto</div>
-            <div id="lastEntry" class="val">—</div>
-            <small class="muted" id="lastDesc">—</small>
-          </div>
-          <div style="text-align:right">
-            <div class="muted">Média por mês</div>
-            <div id="avgPerMonth" class="val">R$ 0,00</div>
-            <small class="muted">(média simples)</small>
-          </div>
+        <div id="Geral" class="tab-content active">
+             <div class="card">
+                <div class="indicator-container">
+                    <div class="indicator">
+                        <p>Gasto Total (sem o valor da moto)</p>
+                        <span class="value" id="total-geral-sem-moto"></span>
+                    </div>
+                    <div class="indicator">
+                        <p>Custo por KM Rodado</p>
+                        <span class="value" id="custo-km-geral"></span>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="geralChart"></canvas>
+                </div>
+            </div>
         </div>
-      </div>
 
-      <div class="card big">
-        <div class="muted">📈 Gastos ao longo do tempo</div>
-        <canvas id="timeChart"></canvas>
-      </div>
-
-      <div class="card">
-        <div class="muted">💸 Distribuição por categoria</div>
-        <canvas id="pieChart"></canvas>
-      </div>
-
-      <div class="card">
-        <div class="muted" id="gasTitle">🔧 Indicadores da categoria</div>
-        <div style="margin-top:10px" id="categoryMetrics">
-          <div class="row">
-            <div class="metric">
-              <small class="muted">Total</small>
-              <div class="k" id="catTotal">R$ 0,00</div>
+        <div id="Gasolina" class="tab-content">
+            <div class="card">
+                <div class="indicator-container">
+                    <div class="indicator">
+                        <p>Gasto Total</p>
+                        <span class="value" id="total-gasolina"></span>
+                    </div>
+                    <div class="indicator">
+                        <p>Consumo Médio</p>
+                        <span class="value" id="consumo-medio"></span>
+                    </div>
+                    <div class="indicator">
+                        <p>Preço Médio / Litro</p>
+                        <span class="value" id="preco-medio-litro"></span>
+                    </div>
+                </div>
+                <div class="chart-container">
+                     <canvas id="gasolinaChart"></canvas>
+                </div>
+                 <div class="chart-container">
+                    <canvas id="precoLitroChart"></canvas>
+                </div>
             </div>
-            <div class="metric">
-              <small class="muted">Contagem</small>
-              <div class="k" id="catCount">0</div>
-            </div>
-            <div class="metric">
-              <small class="muted">Média</small>
-              <div class="k" id="catAvg">R$ 0,00</div>
-            </div>
-          </div>
-          <div style="margin-top:10px" id="gasExtra" class="muted"></div>
         </div>
-      </div>
 
+        <div id="Oleo" class="tab-content">
+            <div class="card">
+                <div class="indicator-container">
+                     <div class="indicator">
+                        <p>Gasto Total com Óleo</p>
+                        <span class="value" id="total-oleo"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="Outros" class="tab-content">
+            <div class="card">
+                <div class="indicator-container">
+                     <div class="indicator">
+                        <p>Gasto Total (Outros)</p>
+                        <span class="value" id="total-outros"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="Infracoes" class="tab-content">
+            <div class="card">
+                <div class="indicator-container">
+                     <div class="indicator">
+                        <p>Gasto Total com Infrações</p>
+                        <span class="value" id="total-infracoes"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <footer>
-      <div>💡 Dica: selecione uma categoria para ver detalhes. Se houver bloqueio CORS ao buscar a planilha, baixe o CSV e abra este arquivo localmente (arraste-o para o navegador).</div>
-    </footer>
-  </div>
+    <script>
+        // --- LÓGICA DAS ABAS ---
+        function openTab(evt, tabName) {
+            let i, tabcontent, tablinks;
+            tabcontent = document.getElementsByClassName("tab-content");
+            for (i = 0; i < tabcontent.length; i++) {
+                tabcontent[i].style.display = "none";
+            }
+            tablinks = document.getElementsByClassName("tab-button");
+            for (i = 0; i < tablinks.length; i++) {
+                tablinks[i].className = tablinks[i].className.replace(" active", "");
+            }
+            document.getElementById(tabName).style.display = "block";
+            evt.currentTarget.className += " active";
+        }
 
-<script>
-const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSXYUEcvzBEg1AQ5754QmQUGb73zVzI6LEI-WmdAxHx1N2_5ZGLPP0DobNZQW1-IUk1qZVOiu0SZ965/pub?gid=817947441&single=true&output=csv';
+        const rawData = `Categoria,Data,Chave,Valor
+Gasolina,09/02/2024,Valor total,20
+Gasolina,10/02/2024,Valor total,50
+Gasolina,29/02/2024,Valor total,15
+Gasolina,06/03/2024,Quilometragem,138.1
+Gasolina,06/03/2024,Valor do litro,4.59
+Gasolina,06/03/2024,Valor total,49.9
+Gasolina,15/03/2024,Quilometragem,354.4
+Gasolina,15/03/2024,Valor do litro,5.49
+Gasolina,15/03/2024,Valor total,64.29
+Gasolina,25/03/2024,Quilometragem,680.1
+Gasolina,25/03/2024,Valor do litro,5.59
+Gasolina,25/03/2024,Valor total,48.24
+Gasolina,02/04/2024,Quilometragem,1005.1
+Gasolina,02/04/2024,Valor do litro,5.59
+Gasolina,02/04/2024,Valor total,40
+Gasolina,10/04/2024,Quilometragem,1282.9
+Gasolina,10/04/2024,Valor do litro,5.57
+Gasolina,10/04/2024,Valor total,52.69
+Gasolina,16/04/2024,Quilometragem,1541.2
+Gasolina,16/04/2024,Valor do litro,5.84
+Gasolina,16/04/2024,Valor total,29.2
+Gasolina,04/05/2024,Quilometragem,1933.1
+Gasolina,04/05/2024,Valor do litro,5.99
+Gasolina,04/05/2024,Valor total,80.86
+Gasolina,25/05/2024,Quilometragem,2245.1
+Gasolina,25/05/2024,Valor do litro,5.64
+Gasolina,25/05/2024,Valor total,54.65
+Gasolina,18/06/2024,Quilometragem,2671.1
+Gasolina,18/06/2024,Valor do litro,5.89
+Gasolina,18/06/2024,Valor total,30
+Gasolina,24/06/2024,Quilometragem,2684.8
+Gasolina,24/06/2024,Valor do litro,5.89
+Gasolina,24/06/2024,Valor total,30
+Gasolina,01/07/2024,Quilometragem,2899.1
+Gasolina,01/07/2024,Valor do litro,5.99
+Gasolina,01/07/2024,Valor total,30
+Gasolina,21/07/2024,Quilometragem,3188.9
+Gasolina,21/07/2024,Valor do litro,6.39
+Gasolina,21/07/2024,Valor total,30
+Gasolina,23/07/2024,Quilometragem,3216.9
+Gasolina,23/07/2024,Valor do litro,5.99
+Gasolina,23/07/2024,Valor total,58.1
+Gasolina,08/08/2024,Quilometragem,3671.8
+Gasolina,08/08/2024,Valor do litro,5.77
+Gasolina,08/08/2024,Valor total,60
+Gasolina,11/08/2024,Quilometragem,3712.6
+Gasolina,11/08/2024,Valor do litro,6.19
+Gasolina,11/08/2024,Valor total,28.49
+Gasolina,16/08/2024,Quilometragem,4139.2
+Gasolina,16/08/2024,Valor do litro,6.29
+Gasolina,16/08/2024,Valor total,10
+Gasolina,16/08/2024,Quilometragem,4139.7
+Gasolina,16/08/2024,Valor do litro,6.09
+Gasolina,16/08/2024,Valor total,50
+Gasolina,21/08/2024,Quilometragem,4272.4
+Gasolina,21/08/2024,Valor do litro,5.89
+Gasolina,21/08/2024,Valor total,40
+Gasolina,27/08/2024,Quilometragem,4302
+Gasolina,27/08/2024,Valor do litro,5.89
+Gasolina,27/08/2024,Valor total,14.26
+Gasolina,06/09/2024,Quilometragem,4544.7
+Gasolina,06/09/2024,Valor do litro,5.99
+Gasolina,06/09/2024,Valor total,30
+Gasolina,09/09/2024,Quilometragem,5000
+Gasolina,09/09/2024,Valor do litro,5.99
+Gasolina,09/09/2024,Valor total,20
+Gasolina,25/09/2024,Quilometragem,4866.5
+Gasolina,25/09/2024,Valor do litro,5.93
+Gasolina,25/09/2024,Valor total,30
+Gasolina,30/09/2024,Quilometragem,4964.2
+Gasolina,30/09/2024,Valor do litro,6.19
+Gasolina,30/09/2024,Valor total,50
+Gasolina,05/10/2024,Quilometragem,5119.7
+Gasolina,05/10/2024,Valor do litro,5.97
+Gasolina,05/10/2024,Valor total,50.92
+Gasolina,13/10/2024,Quilometragem,5315.6
+Gasolina,13/10/2024,Valor do litro,5.97
+Gasolina,13/10/2024,Valor total,30
+Gasolina,23/10/2024,Quilometragem,5611.7
+Gasolina,23/10/2024,Valor do litro,5.89
+Gasolina,23/10/2024,Valor total,74.8
+Gasolina,11/11/2024,Quilometragem,5878.9
+Gasolina,11/11/2024,Valor do litro,5.99
+Gasolina,11/11/2024,Valor total,52.05
+Gasolina,25/11/2024,Quilometragem,6292.2
+Gasolina,25/11/2024,Valor do litro,5.89
+Gasolina,25/11/2024,Valor total,74.51
+Gasolina,07/12/2024,Quilometragem,6599.1
+Gasolina,07/12/2024,Valor do litro,5.97
+Gasolina,07/12/2024,Valor total,55.16
+Gasolina,27/12/2024,Quilometragem,6929.8
+Gasolina,27/12/2024,Valor do litro,5.97
+Gasolina,27/12/2024,Valor total,73.25
+Gasolina,04/02/2025,Quilometragem,7112.7
+Gasolina,04/02/2025,Valor do litro,6.29
+Gasolina,04/02/2025,Valor total,40.38
+Gasolina,17/03/2025,Quilometragem,7552.5
+Gasolina,17/03/2025,Valor do litro,5.99
+Gasolina,17/03/2025,Valor total,78.71
+Gasolina,10/03/2025,Quilometragem,7443.8
+Gasolina,10/03/2025,Valor do litro,5.99
+Gasolina,10/03/2025,Valor total,10
+Gasolina,03/04/2025,Quilometragem,7956.8
+Gasolina,03/04/2025,Valor do litro,6.39
+Gasolina,03/04/2025,Valor total,85.31
+Gasolina,11/05/2025,Quilometragem,8425.5
+Gasolina,11/05/2025,Valor do litro,5.95
+Gasolina,11/05/2025,Valor total,66.52
+Gasolina,16/06/2025,Quilometragem,8815.3
+Gasolina,16/06/2025,Valor do litro,6.14
+Gasolina,16/06/2025,Valor total,83.75
+Gasolina,06/08/2025,Quilometragem,9291.3
+Gasolina,06/08/2025,Valor do litro,6.59
+Gasolina,06/08/2025,Valor total,69.06
+Gasolina,07/09/2025,Quilometragem,9455.3
+Gasolina,07/09/2025,Valor do litro,6.59
+Gasolina,07/09/2025,Valor total,43.16
+Óleo,11/04/2024,Valor,42.99
+Óleo,11/04/2024,Quilometragem,1313.3
+Óleo,18/06/2024,Valor,42.90
+Óleo,18/06/2024,Quilometragem,2553.6
+Óleo,12/08/2024,Valor,42.90
+Óleo,12/08/2024,Quilometragem,3998.0
+Óleo,09/09/2024,Valor,43.00
+Óleo,09/09/2024,Quilometragem,5001.0
+Óleo,30/09/2024,Valor,45.00
+Óleo,30/09/2024,Quilometragem,4965.2
+Óleo,10/12/2024,Valor,28.00
+Óleo,10/12/2024,Quilometragem,6683.5
+Óleo,10/03/2025,Valor,32.00
+Óleo,10/03/2025,Quilometragem,7443.8
+Óleo,23/06/2025,Valor,30.00
+Óleo,23/06/2025,Quilometragem,8853.3
+Óleo,28/09/2025,Valor,34.00
+Óleo,10/10/2025,Valor,42.00
+Infração,14/10/2024,Valor,88.38
+Infração,14/10/2024,Tipo,Leve
+Infração,14/10/2024,Motivo,Parar o veículo no passeio
+Infração,14/10/2024,Pontos,3
+Outros,09/02/2024,Moto,5800.00
+Outros,13/02/2024,Protetor para pedal de marcha,10.80
+Outros,13/02/2024,Cinta plástica 100un,8.61
+Outros,13/02/2024,Cera de carnaúba,14.90
+Outros,13/02/2024,Capa de tênis,11.96
+Outros,13/02/2024,Capa de banco,14.96
+Outros,13/02/2024,Suporte de celular,21.86
+Outros,13/02/2024,Botão de pisca alerta,10.00
+Outros,13/02/2024,Rede elástica,11.05
+Outros,19/02/2024,Vistoria e transferência,560.72
+Outros,19/02/2024,Taxa digitalização transferência,16.74
+Outros,19/02/2024,Placa Mercosul,80.00
+Outros,19/02/2024,Pneu dianteiro,210.00
+Outros,21/02/2024,Parafusos Placa,2.40
+Outros,22/02/2024,Chicote,144.15
+Outros,22/02/2024,Retrovisor,32.49
+Outros,22/02/2024,Seguro Suhai,364.14
+Outros,22/02/2024,Capa de chuva,186.71
+Outros,22/02/2024,Capacete,305.00
+Outros,02/03/2024,Tranca capacete,12.00
+Outros,11/03/2024,Relação,140.00
+Outros,11/03/2024,Lâmpada farol baixo,35.00
+Outros,11/03/2024,Bucha da coroa,25.00
+Outros,11/03/2024,Prisioneiro,30.00
+Outros,13/06/2024,Vela e cachimbo,29.00
+Outros,22/06/2024,Mêcanico carburador,100.00
+Outros,24/06/2024,Mêcanico carburador,383.00
+Outros,27/08/2024,Pisca e buzina,64.00
+Outros,27/08/2024,Suporte placa,28.00
+Outros,09/09/2024,Mecânico acelerador,100.98
+Outros,11/09/2024,Renovaçao CNH,73.51
+Outros,27/09/2024,Guidão,65.00
+Outros,27/09/2024,Estribo,80.00
+Outros,27/09/2024,Pedal câmbio,45.00
+Outros,27/09/2024,Pneu traseiro,210.00
+Outros,27/09/2024,Pedal partida,50.00
+Outros,27/09/2024,Câmara traseira,50.00
+Outros,30/09/2024,Lona de freio,44.00
+Outros,30/12/2024,Freio completo,640.88
+Outros,02/01/2025,Amortecedor,155.04
+Outros,02/01/2025,Carenagem painel,23.99
+Outros,10/03/2025,Parafuso,35.00
+Outros,23/06/2025,Alavanca partida,68.00
+Outros,10/10/2025,Kit piscas,47.37
+Outros,10/10/2025,Chave punho,28.99
+Outros,10/10/2025,Paralama traseiro,47.52
+Outros,10/10/2025,Kit carenagem,154.55
+Outros,10/10/2025,Farol,35.98
+Outros,10/10/2025,Escapamento,162.11
+Outros,10/10/2025,Mola pezinho,25.00
+Outros,10/10/2025,Guarnição,50.00
+Outros,10/10/2025,Bucha da balança,110.00
+Outros,10/10/2025,Vela,60.00`;
 
-let raw = [];
-let parsed = [];
-let charts = {};
+        // --- PROCESSAMENTO DE DADOS ---
+        const formatCurrency = (value) => value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        const formatNumber = (value, decimals = 2) => value.toFixed(decimals).replace('.', ',');
 
-function fmtBR(x){
-  if(x===null||x===undefined||isNaN(x)) return 'R$ 0,00';
-  return x.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
-}
+        const rows = rawData.trim().split('\n').slice(1);
+        const data = rows.map(row => {
+            const [Categoria, Data, Chave, Valor] = row.split(',');
+            return { Categoria, Data, Chave, Valor: parseFloat(Valor.replace(',', '.')) };
+        });
 
-function parseNumber(v){
-  if(!v) return NaN;
-  // replace comma decimal
-  v = String(v).replace(/\./g,'').replace(/,/g,'.');
-  const n = parseFloat(v);
-  return isNaN(n)?NaN:n;
-}
+        const gastos = {};
+        data.forEach(item => {
+            if (!gastos[item.Categoria]) {
+                gastos[item.Categoria] = [];
+            }
+            gastos[item.Categoria].push(item);
+        });
+        
+        // --- CÁLCULOS ---
+        // Gasolina
+        const gasolinaData = gastos['Gasolina'] || [];
+        const totalGasolina = gasolinaData.filter(g => g.Chave === 'Valor total').reduce((sum, item) => sum + item.Valor, 0);
+        const kmRegistros = gasolinaData.filter(g => g.Chave === 'Quilometragem').map(g => g.Valor);
+        const kmMax = Math.max(...kmRegistros, 0);
+        const kmMin = Math.min(...kmRegistros, 0);
+        const kmTotal = kmMax - kmMin;
+        
+        const precosLitro = gasolinaData.filter(g => g.Chave === 'Valor do litro');
+        const precoMedioLitro = precosLitro.reduce((sum, item) => sum + item.Valor, 0) / precosLitro.length;
+        
+        let totalLitros = 0;
+        gasolinaData.forEach(item => {
+             if(item.Chave === 'Valor total') {
+                const precoDoDia = gasolinaData.find(p => p.Data === item.Data && p.Chave === 'Valor do litro');
+                if(precoDoDia) { totalLitros += item.Valor / precoDoDia.Valor; }
+             }
+        });
+        const consumoMedio = kmTotal / totalLitros;
 
-function loadData(){
-  document.getElementById('status').textContent = 'Buscando CSV online…';
-  Papa.parse(CSV_URL, {
-    download:true, header:true, skipEmptyLines:true,
-    complete: function(res){
-      raw = res.data;
-      document.getElementById('status').textContent = 'Dados carregados — processando…';
-      processData();
-    },
-    error:function(err){
-      document.getElementById('status').textContent = 'Erro ao carregar CSV: '+err.message;
-    }
-  });
-}
+        // Outras categorias
+        const totalOleo = (gastos['Óleo'] || []).filter(o => o.Chave === 'Valor').reduce((sum, item) => sum + item.Valor, 0);
+        const totalInfracoes = (gastos['Infração'] || []).filter(i => i.Chave === 'Valor').reduce((sum, item) => sum + item.Valor, 0);
+        const valorMoto = (gastos['Outros'] || []).find(o => o.Chave === 'Moto')?.Valor || 0;
+        const totalOutros = (gastos['Outros'] || []).reduce((sum, item) => sum + item.Valor, 0) - valorMoto;
 
-function processData(){
-  // Normalize headers: Categoria,Data,Chave,Valor
-  parsed = raw.map(r=>({
-    Categoria:(r.Categoria||r.categoria||r.CATEGORY||r.Category||'').trim(),
-    Data:(r.Data||r.data||'').trim(),
-    Chave:(r.Chave||r.chave||r.Key||'').trim(),
-    Valor:(r.Valor||r.valor||r.Value||'').trim()
-  })).filter(r=>r.Categoria||r.Data||r.Valor);
+        // Geral
+        const totalGeralSemMoto = totalGasolina + totalOleo + totalInfracoes + totalOutros;
+        const custoKmGeral = totalGeralSemMoto / kmTotal;
 
-  // parse dates
-  parsed.forEach(r=>{
-    // try dd/mm/yyyy or yyyy-mm-dd
-    let d = r.Data;
-    let date = null;
-    if(/\d{2}\/\d{2}\/\d{4}/.test(d)){
-      const [dd,mm,yy]=d.split('/'); date = new Date(`${yy}-${mm}-${dd}T00:00:00`);
-    } else {
-      const t = Date.parse(d);
-      if(!isNaN(t)) date = new Date(t);
-    }
-    r._date = date;
-    r._valorNum = parseNumber(r.Valor);
-  });
+        // --- ATUALIZAÇÃO DO HTML ---
+        document.getElementById('total-gasolina').textContent = formatCurrency(totalGasolina);
+        document.getElementById('consumo-medio').textContent = `${formatNumber(consumoMedio, 2)} km/L`;
+        document.getElementById('preco-medio-litro').textContent = formatCurrency(precoMedioLitro);
+        
+        document.getElementById('total-oleo').textContent = formatCurrency(totalOleo);
+        document.getElementById('total-outros').textContent = formatCurrency(totalOutros);
+        document.getElementById('total-infracoes').textContent = formatCurrency(totalInfracoes);
+        
+        document.getElementById('total-geral-sem-moto').textContent = formatCurrency(totalGeralSemMoto);
+        document.getElementById('custo-km-geral').textContent = `${formatCurrency(custoKmGeral)}/km`;
 
-  // sort by date
-  parsed = parsed.filter(r=>r._date).sort((a,b)=>a._date - b._date);
+        // --- GRÁFICOS ---
+        Chart.defaults.font.family = "'Inter', sans-serif";
+        Chart.defaults.plugins.legend.position = 'bottom';
+        Chart.defaults.plugins.tooltip.backgroundColor = '#333';
+        Chart.defaults.plugins.tooltip.titleFont.size = 14;
+        Chart.defaults.plugins.tooltip.bodyFont.size = 12;
+        Chart.defaults.plugins.tooltip.padding = 10;
+        Chart.defaults.plugins.tooltip.cornerRadius = 5;
 
-  setupUI();
-}
+        // Função para criar gradientes
+        const createGradient = (ctx, chartArea, color1, color2) => {
+            const gradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
+            gradient.addColorStop(0, color1);
+            gradient.addColorStop(1, color2);
+            return gradient;
+        };
+        
+        // Gráfico Geral (Doughnut)
+        const ctxGeral = document.getElementById('geralChart').getContext('2d');
+        new Chart(ctxGeral, {
+            type: 'doughnut',
+            data: {
+                labels: ['Gasolina', 'Óleo', 'Infrações', 'Outros'],
+                datasets: [{
+                    label: 'Gastos',
+                    data: [totalGasolina, totalOleo, totalInfracoes, totalOutros],
+                    backgroundColor: ['#4a90e2', '#50e3c2', '#e74c3c', '#f5a623'],
+                    borderColor: '#fff',
+                    borderWidth: 3,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '70%',
+                plugins: {
+                    title: { display: true, text: 'Distribuição de Gastos por Categoria', font: { size: 16 } }
+                }
+            }
+        });
+        
+        // Gráfico de Gasto Mensal (Bar)
+        const gastosGasolinaPorMes = {};
+        gasolinaData.filter(g => g.Chave === 'Valor total').forEach(g => {
+            const [dia, mes, ano] = g.Data.split('/');
+            const mesAno = `${mes}/${ano}`;
+            if (!gastosGasolinaPorMes[mesAno]) { gastosGasolinaPorMes[mesAno] = 0; }
+            gastosGasolinaPorMes[mesAno] += g.Valor;
+        });
 
-function setupUI(){
-  const cats = Array.from(new Set(parsed.map(r=>r.Categoria))).sort();
-  const sel = document.getElementById('categorySelect'); sel.innerHTML='';
-  const optAll = document.createElement('option'); optAll.value='__all'; optAll.textContent='— Todas as categorias —'; sel.appendChild(optAll);
-  cats.forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent=c;sel.appendChild(o)});
+        const ctxGasolina = document.getElementById('gasolinaChart').getContext('2d');
+        new Chart(ctxGasolina, {
+            type: 'bar',
+            data: {
+                labels: Object.keys(gastosGasolinaPorMes),
+                datasets: [{
+                    label: 'Gasto com Gasolina',
+                    data: Object.values(gastosGasolinaPorMes),
+                    backgroundColor: (context) => {
+                        const chart = context.chart;
+                        const { ctx, chartArea } = chart;
+                        if (!chartArea) { return null; }
+                        return createGradient(ctx, chartArea, 'rgba(74, 144, 226, 0.6)', 'rgba(74, 144, 226, 1)');
+                    },
+                    borderRadius: 6,
+                    borderWidth: 0
+                }]
+            },
+             options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { title: { display: true, text: 'Gasto Mensal com Gasolina', font: { size: 16 } } },
+                scales: { x: { grid: { display: false } }, y: { grid: { color: '#e8e8e8' } } }
+            }
+        });
 
-  document.getElementById('resetBtn').addEventListener('click',()=>{sel.value='__all'; updateViews();});
-  sel.addEventListener('change',updateViews);
-
-  // initial charts
-  createCharts();
-  updateViews();
-  document.getElementById('status').textContent = 'Pronto ✅';
-}
-
-function aggregateByMonth(entries){
-  const map = new Map();
-  entries.forEach(e=>{
-    const k = e._date.getFullYear() + '-' + String(e._date.getMonth()+1).padStart(2,'0');
-    if(!map.has(k)) map.set(k,0);
-    map.set(k, map.get(k) + (isFinite(e._valorNum)?e._valorNum:0));
-  });
-  const arr = Array.from(map.entries()).sort();
-  return arr.map(([k,v])=>({month:k, value:v}));
-}
-
-function createCharts(){
-  const tctx = document.getElementById('timeChart').getContext('2d');
-  charts.time = new Chart(tctx,{type:'line',data:{labels:[],datasets:[{label:'Gasto (R$)',data:[] ,tension:0.25,fill:true}]},options:{plugins:{legend:{display:false}},scales:{x:{type:'category'},y:{beginAtZero:true}}}});
-
-  const pctx = document.getElementById('pieChart').getContext('2d');
-  charts.pie = new Chart(pctx,{type:'pie',data:{labels:[],datasets:[{data:[]}]},options:{plugins:{legend:{position:'bottom'}}}});
-}
-
-function updateViews(){
-  const cat = document.getElementById('categorySelect').value;
-  const entries = cat==='__all'? parsed : parsed.filter(r=>r.Categoria===cat);
-
-  // basic indicators
-  const total = entries.reduce((s,e)=>(s + (isFinite(e._valorNum)?e._valorNum:0)),0);
-  document.getElementById('totalSpent').textContent = fmtBR(total);
-  document.getElementById('countEntries').textContent = entries.length;
-
-  const last = entries.slice().reverse().find(e=>isFinite(e._valorNum));
-  document.getElementById('lastEntry').textContent = last? fmtBR(last._valorNum) : '—';
-  document.getElementById('lastDesc').textContent = last? (last.Data + ' — ' + (last.Chave||'') ) : '—';
-
-  // period
-  if(parsed.length){
-    const d0 = parsed[0]._date; const d1 = parsed[parsed.length-1]._date;
-    document.getElementById('period').textContent = d0.toLocaleDateString('pt-BR') + ' → ' + d1.toLocaleDateString('pt-BR');
-  }
-
-  // avg per month
-  const months = new Set(entries.map(e=> e._date.getFullYear()+'-'+(e._date.getMonth()+1)));
-  const avgMonth = months.size? total / months.size : 0;
-  document.getElementById('avgPerMonth').textContent = fmtBR(avgMonth);
-
-  // category metrics
-  document.getElementById('catTotal').textContent = fmtBR(total);
-  document.getElementById('catCount').textContent = entries.length;
-  document.getElementById('catAvg').textContent = fmtBR(entries.length? total/entries.length : 0);
-
-  // pie chart: totals per category (global)
-  const totalsByCat = {};
-  parsed.forEach(e=>{ const v = isFinite(e._valorNum)?e._valorNum:0; totalsByCat[e.Categoria] = (totalsByCat[e.Categoria]||0)+v });
-  const labels = Object.keys(totalsByCat).sort((a,b)=>totalsByCat[b]-totalsByCat[a]);
-  charts.pie.data.labels = labels;
-  charts.pie.data.datasets[0].data = labels.map(l=>totalsByCat[l]);
-  charts.pie.update();
-
-  // time chart: monthly aggregated for selected entries
-  const monthly = aggregateByMonth(entries);
-  charts.time.data.labels = monthly.map(m=>m.month);
-  charts.time.data.datasets[0].data = monthly.map(m=>m.value);
-  charts.time.update();
-
-  // gas-specific extras
-  const gasExtra = document.getElementById('gasExtra'); gasExtra.innerHTML='';
-  document.getElementById('gasTitle').textContent = '🔧 Indicadores da categoria' + (cat && cat!=='__all' ? ' — ' + cat : '');
-  if((cat==='Gasolina' || cat.toLowerCase().includes('gasolina'))){
-    // compute km differences and cost per km when possible
-    const kmEntries = parsed.filter(e=>e.Categoria.toLowerCase().includes('gasolina') && e.Chave.toLowerCase().includes('quilometragem') && isFinite(e._valorNum));
-    const fills = parsed.filter(e=>e.Categoria.toLowerCase().includes('gasolina') && (e.Chave.toLowerCase().includes('valor total')|| e.Chave.toLowerCase().includes('valor')));
-    // build array of km by date
-    const kms = parsed.filter(e=>e.Categoria.toLowerCase().includes('gasolina') && e.Chave.toLowerCase().includes('quilometragem')).map(e=>({date:e._date,km:e._valorNum})).sort((a,b)=>a.date-b.date);
-    // pair successive km to estimate distance
-    let distances = [];
-    for(let i=1;i<kms.length;i++){ const d = kms[i].km - kms[i-1].km; if(isFinite(d) && d>0) distances.push(d); }
-    // try match fills to nearest km date within 3 days
-    let costPerKm = [];
-    fills.forEach(f=>{
-      const nearest = kms.reduce((acc,k)=>{
-        const diff = Math.abs(k.date - f._date);
-        if(diff < acc.diff) return {k:k,diff:diff}; return acc;
-      },{k:null,diff:Infinity});
-      if(nearest.k && nearest.k.km && isFinite(f._valorNum)){
-        costPerKm.push({date:f._date, cost:f._valorNum, km:nearest.k.km});
-      }
-    });
-
-    const avgDistance = distances.length? (distances.reduce((s,x)=>s+x,0)/distances.length):NaN;
-    const avgCostPerKm = (distances.length && parsed.length)? (()=>{
-      // approximate: sum of fill cost / sum distances (match by order)
-      const fillCosts = fills.filter(f=>isFinite(f._valorNum)).map(f=>f._valorNum);
-      const used = Math.min(fillCosts.length, distances.length);
-      if(used===0) return NaN;
-      const costSum = fillCosts.slice(-used).reduce((s,x)=>s+x,0);
-      const distSum = distances.slice(-used).reduce((s,x)=>s+x,0);
-      return costSum/distSum;
-    })():NaN;
-
-    const el = document.createElement('div');
-    el.innerHTML = `
-      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px">
-        <div><small class=\"muted\">Distância média entre abastecimentos</small><div class=\"k\">${isFinite(avgDistance)? Math.round(avgDistance)+' km':'—'}</div></div>
-        <div><small class=\"muted\">Custo médio por km (estimado)</small><div class=\"k\">${isFinite(avgCostPerKm)? fmtBR(avgCostPerKm):'—'}</div></div>
-        <div><small class=\"muted\">Abastecimentos registrados</small><div class=\"k\">${fills.length}</div></div>
-      </div>`;
-    gasExtra.appendChild(el);
-  }
-}
-
-// on load
-window.addEventListener('load',()=>{ loadData(); });
-
-</script>
+        // Gráfico de Preço do Litro (Line)
+        const precosLitroData = gasolinaData.filter(p => p.Chave === 'Valor do litro');
+        const ctxPrecoLitro = document.getElementById('precoLitroChart').getContext('2d');
+        new Chart(ctxPrecoLitro, {
+            type: 'line',
+            data: {
+                labels: precosLitroData.map(p => p.Data),
+                datasets: [{
+                    label: 'Preço do Litro',
+                    data: precosLitroData.map(p => p.Valor),
+                    borderColor: '#f5a623',
+                    backgroundColor: 'rgba(245, 166, 35, 0.1)',
+                    fill: true,
+                    tension: 0.4,
+                    pointBackgroundColor: '#f5a623',
+                    pointBorderColor: '#fff',
+                    pointHoverRadius: 7,
+                    pointRadius: 5
+                }]
+            },
+             options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { title: { display: true, text: 'Evolução do Preço do Litro', font: { size: 16 } } },
+                scales: { x: { grid: { display: false } }, y: { grid: { color: '#e8e8e8' } } }
+            }
+        });
+    </script>
 </body>
 </html>
