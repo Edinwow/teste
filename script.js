@@ -279,7 +279,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const dataInicio = document.getElementById('dataInicio').value;
             const dataFim = document.getElementById('dataFim').value;
 
-            // 1. Filtra todos os dados relevantes (usuário e data)
             const dadosFiltrados = despesasData.filter(row => {
                 if (!row.data || !row.descricao || !row.nota_fiscal_url || !row.nome) return false;
                 const partes = row.data.split('/');
@@ -295,7 +294,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            // 2. Agrupa os dados filtrados por categoria
             const despesasPorCategoria = dadosFiltrados.reduce((acc, despesa) => {
                 const categoria = despesa.grupo || 'Sem Categoria';
                 if (!acc[categoria]) {
@@ -305,13 +303,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 return acc;
             }, {});
 
-            // 3. Gera um PDF para cada categoria encontrada
+            const zip = new JSZip(); // Cria a instância do ZIP
+
             for (const categoria in despesasPorCategoria) {
                 const pdf = new jsPDF();
                 const despesasDaCategoria = despesasPorCategoria[categoria];
                 let totalCategoria = 0;
 
-                // --- PÁGINA 1: RECIBO / RESUMO ---
                 pdf.setFont('helvetica', 'bold');
                 pdf.setFontSize(18);
                 pdf.text(`Relatório de Despesas - ${categoria}`, 105, 20, { align: 'center' });
@@ -325,24 +323,29 @@ document.addEventListener('DOMContentLoaded', () => {
                 pdf.setFont('helvetica', 'bold');
                 pdf.text('Data', 14, yPosition);
                 pdf.text('Descrição', 50, yPosition);
-                pdf.text('Valor', 180, yPosition, { align: 'right' });
+                pdf.text('Valor', 196, yPosition, { align: 'right' });
                 yPosition += 5;
-                pdf.line(14, yPosition, 196, yPosition); // Linha separadora
+                pdf.line(14, yPosition, 196, yPosition);
                 yPosition += 8;
 
                 pdf.setFont('helvetica', 'normal');
+                pdf.setFontSize(11); // Diminui a fonte para caber mais
                 despesasDaCategoria.forEach(despesa => {
                     pdf.text(despesa.data, 14, yPosition);
-                    pdf.text(pdf.splitTextToSize(despesa.descricao, 100), 50, yPosition); // Quebra de linha automática
+                    const descricaoLines = pdf.splitTextToSize(despesa.descricao, 95); // Largura da coluna de descrição
+                    pdf.text(descricaoLines, 50, yPosition);
                     
                     let valorStr = (despesa.valor || 'R$ 0,00').replace(/[^\d,]/g, '').replace(',', '.');
                     let valor = parseFloat(valorStr);
                     if (!isNaN(valor)) {
                         totalCategoria += valor;
                     }
-                    pdf.text(despesa.valor, 180, yPosition, { align: 'right' });
-                    yPosition += 12; // Aumenta o espaço para acomodar descrições longas
-                    if (yPosition > 270) { // Se a lista for muito longa, cria nova página
+                    pdf.text(despesa.valor, 196, yPosition, { align: 'right' });
+
+                    const alturaLinha = descricaoLines.length * 5; // Calcula a altura do texto (5 é uma boa aproximação para a altura da linha)
+                    yPosition += Math.max(10, alturaLinha + 4); // Incrementa Y baseado na altura do texto
+
+                    if (yPosition > 270) {
                         pdf.addPage();
                         yPosition = 20;
                     }
@@ -352,10 +355,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 pdf.line(14, yPosition, 196, yPosition);
                 yPosition += 8;
                 pdf.setFont('helvetica', 'bold');
-                pdf.text('Total:', 140, yPosition);
-                pdf.text(`R$ ${totalCategoria.toFixed(2).replace('.', ',')}`, 180, yPosition, { align: 'right' });
+                pdf.setFontSize(12);
+                pdf.text('Total:', 160, yPosition, { align: 'right' });
+                pdf.text(`R$ ${totalCategoria.toFixed(2).replace('.', ',')}`, 196, yPosition, { align: 'right' });
 
-                // --- PÁGINAS SEGUINTES: COMPROVANTES ---
                 for (const row of despesasDaCategoria) {
                     pdf.addPage();
                     const pageHeight = pdf.internal.pageSize.getHeight();
@@ -366,8 +369,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     pdf.setFont('helvetica', 'normal');
                     pdf.setFontSize(12);
-                    const dataValor = `${row.data}${row.valor ? ' | ' + row.valor : ''}`;
-                    pdf.text(dataValor, 14, 30);
+                    pdf.text(`${row.data} | ${row.valor || ''}`, 14, 30);
                     
                     try {
                         const imageData = await carregarImagemComoBase64(row.nota_fiscal_url);
@@ -381,22 +383,33 @@ document.addEventListener('DOMContentLoaded', () => {
                                 const scale = Math.min(190 / img.width, availableHeight / img.height);
                                 const imgWidth = img.width * scale;
                                 const imgHeight = img.height * scale;
-                                const xOffset = (210 - imgWidth) / 2; // Centraliza a imagem
+                                const xOffset = (210 - imgWidth) / 2;
 
                                 pdf.addImage(imageData, 'JPEG', xOffset, marginTop, imgWidth, imgHeight);
                                 resolve();
                             };
-                            img.onerror = () => resolve(); // Continua mesmo se a imagem falhar
+                            img.onerror = () => resolve();
                         });
                     } catch (e) {
                         pdf.setTextColor(255, 0, 0);
-                        pdf.text('Erro ao carregar a imagem do comprovante.', 14, 50);
+                        pdf.text('Erro ao carregar o comprovante.', 14, 50);
                     }
                 }
 
-                // 4. Salva o PDF da categoria atual
-                pdf.save(`relatorio_${nomeSelecionado}_${categoria}.pdf`);
+                // Adiciona o PDF gerado como um arquivo no ZIP
+                const pdfBlob = pdf.output('blob');
+                zip.file(`relatorio_${nomeSelecionado}_${categoria}.pdf`, pdfBlob);
             }
+
+            // Gera o arquivo ZIP e inicia o download
+            zip.generateAsync({ type: 'blob' }).then(function(content) {
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(content);
+                link.download = `relatorios_${nomeSelecionado}.zip`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            });
         }
     }
 
