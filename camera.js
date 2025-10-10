@@ -28,7 +28,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Mostra nome do arquivo selecionado
   inputCamera?.addEventListener('change', () => {
     if (inputCamera.files.length > 0) {
-      nomeArquivoSpan.textContent = `Arquivo selecionado: ${inputCamera.files[0].name}`;
+      nomeArquivoSpan.textContent = `${inputCamera.files[0].name}`;
     } else {
       nomeArquivoSpan.textContent = '';
     }
@@ -36,7 +36,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   inputArquivo?.addEventListener('change', () => {
     if (inputArquivo.files.length > 0) {
-      nomeArquivoSpan.textContent = `Arquivo selecionado: ${inputArquivo.files[0].name}`;
+      nomeArquivoSpan.textContent = `${inputArquivo.files[0].name}`;
     } else {
       nomeArquivoSpan.textContent = '';
     }

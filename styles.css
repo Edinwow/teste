@@ -18,7 +18,7 @@ body {
     padding: 20px;
     display: flex;
     justify-content: center;
-    align-items: flex-start;
+    align-items: center; /* AJUSTE: Centraliza verticalmente na tela */
     min-height: 100vh;
     color: var(--text-dark);
 }
@@ -107,7 +107,7 @@ select.form-control {
     gap: 20px;
 }
 
-/* --- Componentes Específicos --- */
+/* --- Componentes Específicos (COM AJUSTES) --- */
 .user-date-group {
     display: flex;
     justify-content: space-between;
@@ -120,17 +120,30 @@ select.form-control {
     gap: 12px;
 }
 .user-select-group img {
-    width: 36px;
-    height: 36px;
+    width: 40px;
+    height: 40px;
     border-radius: 50%;
     object-fit: cover;
 }
 .user-select-group select {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
     border: none;
-    font-size: 1.1em;
-    font-weight: 600;
-    padding-right: 25px;
-    background-position: right 0 center;
+    background-color: transparent;
+    font-size: 1.2em;
+    font-weight: 700;
+    color: var(--text-dark);
+    cursor: pointer; /* Adiciona feedback de clique */
+    padding-right: 25px; /* Espaço para a nova seta */
+    /* Seta customizada com SVG para melhor qualidade */
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%238a8a8e' viewBox='0 0 16 16'%3E%3Cpath fill-rule='evenodd' d='M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 4px center;
+    background-size: 16px;
+}
+.user-select-group select:focus {
+    outline: none;
 }
 .user-select-group.report-user {
     margin-bottom: 24px;
@@ -163,6 +176,11 @@ select.form-control {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    transition: color 0.2s ease;
+}
+.file-info.selected {
+    color: var(--primary-color);
+    font-weight: 500;
 }
 .button-group {
     display: flex;
@@ -214,7 +232,7 @@ select.form-control {
 @media (max-width: 480px) {
     body {
         padding: 0;
-        align-items: stretch; /* Ocupa a altura toda */
+        align-items: flex-start; /* Em telas pequenas, começa do topo */
     }
     .app-container {
         border-radius: 0;

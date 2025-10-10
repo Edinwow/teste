@@ -202,7 +202,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const formData = new FormData(formRegistro);
             const [ano, mes, dia] = inputData.value.split('-');
-            formData.set('data', `${dia}/${mes}/${ano}`);
+            const dataFormatadaParaEnvio = `${dia}/${mes}/${ano}`;
+            formData.set('data', dataFormatadaParaEnvio);
 
             const params = new URLSearchParams();
             formData.forEach((value, key) => params.append(key, value));
@@ -212,11 +213,27 @@ document.addEventListener('DOMContentLoaded', () => {
                     method: 'POST',
                     body: params
                 });
+
+                // --- AJUSTE PRINCIPAL AQUI ---
+                // Adiciona a nova despesa à lista de dados local para atualização instantânea
+                const novaDespesa = {
+                    nome: selectNome.value,
+                    data: dataFormatadaParaEnvio,
+                    grupo: selectGrupo.value,
+                    valor: inputValor.value,
+                    descricao: document.getElementById('descricao').value,
+                    forma_pagamento: selectForma.value,
+                    nota_fiscal_url: document.getElementById('nota_fiscal_url').value
+                };
+                despesasData.push(novaDespesa);
+                
+                alert('Despesa registrada com sucesso!');
+
             } catch (err) {
                 console.error("Erro no envio:", err);
+                alert('Erro ao registrar despesa. Verifique sua conexão.');
             }
 
-            alert('Despesa registrada com sucesso!');
             const usuarioSelecionado = selectNome.value;
             formRegistro.reset();
             selectNome.value = usuarioSelecionado;
@@ -228,8 +245,9 @@ document.addEventListener('DOMContentLoaded', () => {
             submitBtn.disabled = false;
             submitBtn.textContent = 'Adicionar Despesa';
 
-            await carregarDadosDespesas();
-            atualizarLimiteAlimentacao();
+            // Remove a busca de dados aqui e chama a atualização diretamente
+            // await carregarDadosDespesas(); // REMOVIDO
+            atualizarLimiteAlimentacao(); // ATUALIZADO
         });
     }
 
@@ -253,6 +271,7 @@ document.addEventListener('DOMContentLoaded', () => {
     configurarDataAtual();
     carregarDadosDespesas().then(atualizarLimiteAlimentacao);
 
+
     // ===============================
     // LÓGICA DE GERAÇÃO DE RELATÓRIO (MODIFICADA)
     // ===============================
@@ -260,6 +279,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (formRelatorio) {
         const selectNomeRelatorio = document.getElementById('relatorio-nomeSelect');
         const imgFuncionarioRelatorio = document.getElementById('relatorio-funcionario-img');
+        const submitBtnRelatorio = formRelatorio.querySelector('button[type="submit"]');
 
         selectNomeRelatorio?.addEventListener('change', () => {
             const usuario = usuarios.find(u => u.nome === selectNomeRelatorio.value);
@@ -274,6 +294,10 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         async function gerarRelatoriosPorCategoria() {
+            const originalBtnText = submitBtnRelatorio.textContent;
+            submitBtnRelatorio.textContent = 'Gerando relatórios...';
+            submitBtnRelatorio.disabled = true;
+
             const { jsPDF } = window.jspdf;
             const nomeSelecionado = selectNomeRelatorio.value;
             const dataInicio = document.getElementById('dataInicio').value;
@@ -291,6 +315,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (dadosFiltrados.length === 0) {
                 alert('Nenhum dado encontrado para os filtros selecionados.');
+                submitBtnRelatorio.textContent = originalBtnText;
+                submitBtnRelatorio.disabled = false;
                 return;
             }
 
@@ -303,7 +329,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 return acc;
             }, {});
 
-            const zip = new JSZip(); // Cria a instância do ZIP
+            const zip = new JSZip();
 
             for (const categoria in despesasPorCategoria) {
                 const pdf = new jsPDF();
@@ -312,7 +338,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 pdf.setFont('helvetica', 'bold');
                 pdf.setFontSize(18);
-                pdf.text(`Relatório de Despesas - ${categoria}`, 105, 20, { align: 'center' });
+                pdf.text(`Relatório de despesas - ${categoria}`, 105, 20, { align: 'center' });
 
                 pdf.setFont('helvetica', 'normal');
                 pdf.setFontSize(12);
@@ -329,10 +355,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 yPosition += 8;
 
                 pdf.setFont('helvetica', 'normal');
-                pdf.setFontSize(11); // Diminui a fonte para caber mais
+                pdf.setFontSize(11);
                 despesasDaCategoria.forEach(despesa => {
                     pdf.text(despesa.data, 14, yPosition);
-                    const descricaoLines = pdf.splitTextToSize(despesa.descricao, 95); // Largura da coluna de descrição
+                    const descricaoLines = pdf.splitTextToSize(despesa.descricao, 95);
                     pdf.text(descricaoLines, 50, yPosition);
                     
                     let valorStr = (despesa.valor || 'R$ 0,00').replace(/[^\d,]/g, '').replace(',', '.');
@@ -342,8 +368,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                     pdf.text(despesa.valor, 196, yPosition, { align: 'right' });
 
-                    const alturaLinha = descricaoLines.length * 5; // Calcula a altura do texto (5 é uma boa aproximação para a altura da linha)
-                    yPosition += Math.max(10, alturaLinha + 4); // Incrementa Y baseado na altura do texto
+                    const alturaLinha = descricaoLines.length * 5;
+                    yPosition += Math.max(10, alturaLinha + 4);
 
                     if (yPosition > 270) {
                         pdf.addPage();
@@ -396,12 +422,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 }
 
-                // Adiciona o PDF gerado como um arquivo no ZIP
                 const pdfBlob = pdf.output('blob');
                 zip.file(`relatorio_${nomeSelecionado}_${categoria}.pdf`, pdfBlob);
             }
 
-            // Gera o arquivo ZIP e inicia o download
             zip.generateAsync({ type: 'blob' }).then(function(content) {
                 const link = document.createElement('a');
                 link.href = URL.createObjectURL(content);
@@ -409,6 +433,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);
+
+                // Retorna o botão ao estado original
+                submitBtnRelatorio.textContent = originalBtnText;
+                submitBtnRelatorio.disabled = false;
+            }).catch((err) => {
+                console.error("Erro ao gerar o ZIP: ", err);
+                alert("Ocorreu um erro ao compactar os relatórios.");
+                // Retorna o botão ao estado original em caso de erro
+                submitBtnRelatorio.textContent = originalBtnText;
+                submitBtnRelatorio.disabled = false;
             });
         }
     }
