@@ -345,10 +345,8 @@
                 }
                 const rawData = await response.text();
                 
-                // --- PROCESSAMENTO DE DADOS ---
                 processAndRenderData(rawData);
 
-                // Exibe o painel e esconde o indicador de carregamento
                 loadingIndicator.style.display = 'none';
                 dashboardElement.style.display = 'block';
 
@@ -359,13 +357,28 @@
         }
         
         function processAndRenderData(rawData) {
-            const formatCurrency = (value) => value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-            const formatNumber = (value, decimals = 0) => value.toFixed(decimals).replace('.', ',');
+            const formatCurrency = (value) => (value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            const formatNumber = (value, decimals = 0) => (value || 0).toFixed(decimals).replace('.', ',');
 
             const rows = rawData.trim().split('\n').slice(1);
+            
+            // LÓGICA DE PARSING CORRIGIDA
             const data = rows.map(row => {
-                const columns = row.split(',');
-                return { Categoria: columns[0], Data: columns[1], Chave: columns[2], Valor: columns[3] };
+                const parts = row.split(',');
+                const categoria = parts[0];
+                const data = parts[1];
+                const chave = parts[2];
+                
+                // Junta as partes restantes do valor (caso o valor em si tenha vírgulas)
+                const valorStr = parts.slice(3).join(',');
+                
+                // Limpa o valor: remove pontos de milhar e substitui a vírgula decimal por ponto
+                const valorLimpo = valorStr.replace(/\./g, '').replace(',', '.').trim();
+                
+                // Converte para número. Se falhar, retorna 0 para evitar NaN
+                const valorNum = parseFloat(valorLimpo) || 0;
+
+                return { Categoria: categoria, Data: data, Chave: chave, Valor: valorNum };
             });
 
             const gastos = {};
@@ -377,31 +390,31 @@
             // --- CÁLCULOS ---
             // Gasolina
             const gasolinaData = gastos['Gasolina'] || [];
-            const totalGasolina = gasolinaData.filter(g => g.Chave === 'Valor total').reduce((sum, item) => sum + parseFloat(item.Valor), 0);
-            const kmRegistros = gasolinaData.filter(g => g.Chave === 'Quilometragem').map(g => parseFloat(g.Valor));
+            const totalGasolina = gasolinaData.filter(g => g.Chave === 'Valor total').reduce((sum, item) => sum + item.Valor, 0);
+            const kmRegistros = gasolinaData.filter(g => g.Chave === 'Quilometragem').map(g => g.Valor);
             const kmMax = Math.max(...kmRegistros, 0);
             const kmMin = Math.min(...kmRegistros, 0);
             const kmTotal = kmMax - kmMin;
             
             const precosLitro = gasolinaData.filter(g => g.Chave === 'Valor do litro');
-            const precoMedioLitro = precosLitro.reduce((sum, item) => sum + parseFloat(item.Valor), 0) / precosLitro.length;
+            const precoMedioLitro = precosLitro.reduce((sum, item) => sum + item.Valor, 0) / precosLitro.length;
             
             let totalLitros = 0;
             gasolinaData.forEach(item => {
                  if(item.Chave === 'Valor total') {
                     const precoDoDia = gasolinaData.find(p => p.Data === item.Data && p.Chave === 'Valor do litro');
-                    if(precoDoDia) { totalLitros += parseFloat(item.Valor) / parseFloat(precoDoDia.Valor); }
+                    if(precoDoDia) { totalLitros += item.Valor / precoDoDia.Valor; }
                  }
             });
             const consumoMedio = kmTotal / totalLitros;
             
             // Óleo
             const oleoData = gastos['Óleo'] || [];
-            const oleoValores = oleoData.filter(o => o.Chave === 'Valor').map(v => parseFloat(v.Valor));
+            const oleoValores = oleoData.filter(o => o.Chave === 'Valor').map(v => v.Valor);
             const totalOleo = oleoValores.reduce((sum, v) => sum + v, 0);
             const precoMedioOleo = totalOleo / oleoValores.length;
             
-            const oleoKmRegistros = oleoData.filter(o => o.Chave === 'Quilometragem').map(v => parseFloat(v.Valor)).sort((a, b) => a - b);
+            const oleoKmRegistros = oleoData.filter(o => o.Chave === 'Quilometragem').map(v => v.Valor).sort((a, b) => a - b);
             const kmIntervalosOleo = [];
             for (let i = 1; i < oleoKmRegistros.length; i++) {
                 kmIntervalosOleo.push(oleoKmRegistros[i] - oleoKmRegistros[i-1]);
@@ -410,15 +423,15 @@
 
             // Infrações
             const infracoesData = gastos['Infração'] || [];
-            const totalInfracoes = infracoesData.filter(i => i.Chave === 'Valor').reduce((sum, item) => sum + parseFloat(item.Valor), 0);
+            const totalInfracoes = infracoesData.filter(i => i.Chave === 'Valor').reduce((sum, item) => sum + item.Valor, 0);
             const contagemInfracoes = infracoesData.filter(i => i.Chave === 'Valor').length;
-            const totalPontos = infracoesData.filter(i => i.Chave === 'Pontos').reduce((sum, item) => sum + parseInt(item.Valor), 0);
+            const totalPontos = infracoesData.filter(i => i.Chave === 'Pontos').reduce((sum, item) => sum + item.Valor, 0);
 
             // Outros
             const outrosData = gastos['Outros'] || [];
-            const valorMoto = parseFloat(outrosData.find(o => o.Chave === 'Moto')?.Valor || 0);
-            const totalOutros = outrosData.reduce((sum, item) => sum + parseFloat(item.Valor), 0) - valorMoto;
-            const outrosTop = outrosData.filter(o => o.Chave !== 'Moto').sort((a,b) => parseFloat(b.Valor) - parseFloat(a.Valor)).slice(0, 10);
+            const valorMoto = outrosData.find(o => o.Chave === 'Moto')?.Valor || 0;
+            const totalOutros = outrosData.reduce((sum, item) => sum + item.Valor, 0) - valorMoto;
+            const outrosTop = outrosData.filter(o => o.Chave !== 'Moto').sort((a,b) => b.Valor - a.Valor).slice(0, 10);
             
             // Geral
             const totalGeralSemMoto = totalGasolina + totalOleo + totalInfracoes + totalOutros;
@@ -439,12 +452,12 @@
             document.getElementById('contagem-infracoes').textContent = contagemInfracoes;
             document.getElementById('total-pontos').textContent = totalPontos;
 
-            document.getElementById('infracoes-lista').innerHTML = ''; // Limpa a lista antes de adicionar
+            document.getElementById('infracoes-lista').innerHTML = '';
             infracoesData.filter(i => i.Chave === 'Motivo').forEach(inf => {
                 const data = inf.Data;
-                const motivo = inf.Valor;
+                const motivo = data.split(',')[3] || inf.Valor;
                 const tipo = infracoesData.find(i => i.Data === data && i.Chave === 'Tipo').Valor;
-                const valor = parseFloat(infracoesData.find(i => i.Data === data && i.Chave === 'Valor').Valor);
+                const valor = infracoesData.find(i => i.Data === data && i.Chave === 'Valor').Valor;
                 const pontos = infracoesData.find(i => i.Data === data && i.Chave === 'Pontos').Valor;
 
                 document.getElementById('infracoes-lista').innerHTML += `
@@ -505,7 +518,7 @@
                 const [dia, mes, ano] = g.Data.split('/');
                 const mesAno = `${mes}/${ano}`;
                 if (!gastosGasolinaPorMes[mesAno]) { gastosGasolinaPorMes[mesAno] = 0; }
-                gastosGasolinaPorMes[mesAno] += parseFloat(g.Valor);
+                gastosGasolinaPorMes[mesAno] += g.Valor;
             });
 
             new Chart(document.getElementById('gasolinaChart'), {
@@ -522,14 +535,13 @@
                 options: {...commonOptions, plugins: {...commonOptions.plugins, title: {...commonOptions.plugins.title, text: 'Gasto Mensal com Gasolina'}}}
             });
 
-            const precosLitroData = gasolinaData.filter(p => p.Chave === 'Valor do litro');
             new Chart(document.getElementById('precoLitroChart'), {
                 type: 'line',
                 data: {
-                    labels: precosLitroData.map(p => p.Data),
+                    labels: precosLitro.map(p => p.Data),
                     datasets: [{
                         label: 'Preço do Litro',
-                        data: precosLitroData.map(p => parseFloat(p.Valor)),
+                        data: precosLitro.map(p => p.Valor),
                         borderColor: '#f1c40f',
                         backgroundColor: 'rgba(241, 196, 15, 0.1)',
                         fill: true,
@@ -559,7 +571,7 @@
                     labels: outrosTop.map(o => o.Chave),
                     datasets: [{
                         label: 'Valor Gasto',
-                        data: outrosTop.map(o => parseFloat(o.Valor)),
+                        data: outrosTop.map(o => o.Valor),
                         backgroundColor: '#9b59b6',
                         borderRadius: 6
                     }]
@@ -568,7 +580,6 @@
             });
         }
         
-        // Inicia o carregamento dos dados quando a página for carregada
         document.addEventListener('DOMContentLoaded', loadDashboard);
     </script>
 </body>
