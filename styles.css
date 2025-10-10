@@ -33,32 +33,6 @@ body {
     box-sizing: border-box;
 }
 
-/* --- Resumo Rápido --- */
-.summary-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 16px;
-    margin-bottom: 24px;
-}
-.summary-card {
-    background-color: #f8f9fa;
-    border-radius: 12px;
-    padding: 12px;
-    text-align: center;
-}
-.summary-card h4 {
-    margin: 0 0 4px 0;
-    font-size: 0.8em;
-    font-weight: 500;
-    color: var(--text-light);
-}
-.summary-card p {
-    margin: 0;
-    font-size: 1.2em;
-    font-weight: 600;
-    color: var(--text-dark);
-}
-
 /* --- Navegação por Abas --- */
 .tab-nav {
     display: flex;
