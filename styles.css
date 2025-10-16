@@ -147,7 +147,6 @@ select.form-control {
     color: var(--text-light);
     font-weight: 500;
     cursor: pointer;
-    padding-left: 10px; /* Adicionado padding para afastar da seta do dropdown */
 }
 .date-input::-webkit-calendar-picker-indicator {
     cursor: pointer;
@@ -235,17 +234,12 @@ select.form-control {
     color: var(--text-dark);
     min-height: auto;
     border-radius: 0;
-    display: flex; /* Permite alinhar a imagem selecionada */
-    align-items: center;
-    padding-right: 25px; /* Adicionado padding para afastar o texto da seta */
 }
 .choices[data-type*="select-one"] .choices__inner {
     padding-bottom: 0;
 }
 .choices__list--single {
     padding: 0;
-    display: flex; /* Permite alinhar a imagem selecionada */
-    align-items: center;
 }
 .choices[data-type*="select-one"]:after {
     content: '';
@@ -254,7 +248,7 @@ select.form-control {
     border-style: solid;
     border-color: var(--text-light);
     border-width: 0 2px 2px 0;
-    right: 0.5em; /* Ajustado para mover a seta para a direita */
+    right: 0.5em;
     top: 50%;
     transform: translateY(-75%) rotate(45deg);
     margin-top: 0;
@@ -281,24 +275,9 @@ select.form-control {
     padding: 10px 12px;
     font-size: 1rem;
     font-weight: 500;
-    display: flex; /* Permite alinhar a imagem e o texto */
-    align-items: center;
-    gap: 10px; /* Espaço entre imagem e texto */
 }
 .choices__item--choice.is-highlighted {
     background-color: var(--primary-color);
-    color: white;
-}
-.choices__item--choice img { /* Estilo para a imagem nas opções */
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    object-fit: cover;
-}
-
-/* Esconder imagem principal dentro do choices, já que ela fica fora */
-.choices__item img {
-    display: none;
 }
 
 
