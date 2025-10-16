@@ -1,586 +1,106 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Painel de Gastos da Moto (Online)</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
-        
-        :root {
-            --background-color: #f4f7fa;
-            --card-background-color: #ffffff;
-            --text-color: #2c3e50;
-            --text-light-color: #8a99a8;
-            --primary-color: #3498db;
-            --secondary-color: #2ecc71;
-            --danger-color: #e74c3c;
-            --warning-color: #f1c40f;
-            --shadow-color: rgba(44, 62, 80, 0.1);
-            --border-color: #e8edf3;
-        }
-
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: var(--background-color);
-            color: var(--text-color);
-            margin: 0;
-            padding: 20px;
-        }
-
-        .container {
-            max-width: 1200px;
-            margin: auto;
-        }
-        
-        #loading-indicator {
-            text-align: center;
-            padding: 50px;
-            font-size: 1.5rem;
-            font-weight: 600;
-            color: var(--text-light-color);
-        }
-
-        .dashboard-content {
-            display: none; /* Escondido por padrão, será exibido via JS */
-        }
-
-        .header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-
-        .header h1 {
-            font-size: 2.5rem;
-            color: #1d2d3d;
-            font-weight: 700;
-        }
-        
-        .tabs {
-            display: flex;
-            border-bottom: 2px solid var(--border-color);
-            margin-bottom: 25px;
-        }
-        
-        .tab-button {
-            padding: 12px 20px;
-            cursor: pointer;
-            border: none;
-            background-color: transparent;
-            font-size: 1rem;
-            font-weight: 600;
-            color: var(--text-light-color);
-            position: relative;
-            transition: color 0.3s ease;
-        }
-        
-        .tab-button::after {
-            content: '';
-            position: absolute;
-            bottom: -2px;
-            left: 0;
-            width: 100%;
-            height: 2px;
-            background-color: var(--primary-color);
-            transform: scaleX(0);
-            transition: transform 0.3s ease;
-        }
-
-        .tab-button.active {
-            color: var(--primary-color);
-        }
-        
-        .tab-button.active::after {
-            transform: scaleX(1);
-        }
-        
-        .tab-content {
-            display: none;
-            animation: fadeIn 0.5s;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        
-        .tab-content.active {
-            display: block;
-        }
-        
-        .card {
-            background-color: var(--card-background-color);
-            padding: 25px;
-            border-radius: 12px;
-            box-shadow: 0 5px 20px var(--shadow-color);
-            margin-bottom: 20px;
-        }
-        
-        .card h2 {
-            margin-top: 0;
-            font-size: 1.25rem;
-            border-bottom: 1px solid var(--border-color);
-            padding-bottom: 10px;
-            margin-bottom: 20px;
-        }
-        
-        .grid-layout {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px;
-        }
-
-        .indicator-container {
-            display: flex;
-            justify-content: space-around;
-            flex-wrap: wrap;
-            gap: 20px;
-            text-align: center;
-        }
-
-        .indicator p {
-            margin: 0 0 5px 0;
-            font-size: 0.9rem;
-            color: var(--text-light-color);
-            font-weight: 500;
-            text-transform: uppercase;
-        }
-
-        .indicator .value {
-            font-size: 2rem;
-            font-weight: 700;
-            color: var(--text-color);
-        }
-        
-        .chart-container {
-            margin-top: 30px;
-            height: 350px;
-        }
-
-        .infraction-card {
-            border: 1px solid var(--border-color);
-            border-left: 5px solid var(--danger-color);
-            border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 15px;
-        }
-        .infraction-card h3 {
-            margin: 0 0 10px 0;
-        }
-        .infraction-details {
-            display: flex;
-            justify-content: space-between;
-            flex-wrap: wrap;
-            gap: 10px;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Despesas</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="script.js" defer></script>
+  <script src="camera.js" defer></script>
+  <link rel="icon" href="receipt.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
+
 <body>
-
-    <div class="container">
-        <div id="loading-indicator">
-            <p>Carregando dados da sua planilha...</p>
-        </div>
-        
-        <div class="dashboard-content" id="dashboard">
-            <div class="header">
-                <h1>🏍️ Painel de Controle de Gastos</h1>
-            </div>
-            
-            <div class="tabs">
-                <button class="tab-button active" onclick="openTab(event, 'Geral')">💰 Visão Geral</button>
-                <button class="tab-button" onclick="openTab(event, 'Gasolina')">⛽️ Gasolina</button>
-                <button class="tab-button" onclick="openTab(event, 'Oleo')">🛠️ Óleo</button>
-                <button class="tab-button" onclick="openTab(event, 'Outros')">🔩 Outros</button>
-                <button class="tab-button" onclick="openTab(event, 'Infracoes')">📝 Infrações</button>
-            </div>
-
-            <div id="Geral" class="tab-content active">
-                 <div class="card">
-                    <h2>Resumo Financeiro</h2>
-                    <div class="indicator-container">
-                        <div class="indicator">
-                            <p>Gasto Total (sem o valor da moto)</p>
-                            <span class="value" id="total-geral-sem-moto"></span>
-                        </div>
-                        <div class="indicator">
-                            <p>Custo por KM Rodado</p>
-                            <span class="value" id="custo-km-geral"></span>
-                        </div>
-                    </div>
-                    <div class="chart-container">
-                        <canvas id="geralChart"></canvas>
-                    </div>
-                </div>
-            </div>
-
-            <div id="Gasolina" class="tab-content">
-                <div class="card">
-                    <h2>Indicadores de Combustível</h2>
-                    <div class="indicator-container">
-                        <div class="indicator">
-                            <p>Gasto Total</p>
-                            <span class="value" id="total-gasolina"></span>
-                        </div>
-                        <div class="indicator">
-                            <p>Consumo Médio</p>
-                            <span class="value" id="consumo-medio"></span>
-                        </div>
-                        <div class="indicator">
-                            <p>Preço Médio / Litro</p>
-                            <span class="value" id="preco-medio-litro"></span>
-                        </div>
-                    </div>
-                </div>
-                <div class="card">
-                    <h2>Análise de Gastos e Preços</h2>
-                    <div class="grid-layout">
-                        <div class="chart-container">
-                             <canvas id="gasolinaChart"></canvas>
-                        </div>
-                         <div class="chart-container">
-                            <canvas id="precoLitroChart"></canvas>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div id="Oleo" class="tab-content">
-                <div class="card">
-                    <h2>Indicadores de Óleo</h2>
-                    <div class="indicator-container">
-                         <div class="indicator">
-                            <p>Gasto Total</p>
-                            <span class="value" id="total-oleo"></span>
-                        </div>
-                        <div class="indicator">
-                            <p>Preço Médio / Troca</p>
-                            <span class="value" id="preco-medio-oleo"></span>
-                        </div>
-                        <div class="indicator">
-                            <p>KM Médio / Troca</p>
-                            <span class="value" id="km-medio-oleo"></span>
-                        </div>
-                    </div>
-                </div>
-                <div class="card">
-                    <h2>Intervalo entre Trocas de Óleo</h2>
-                    <div class="chart-container">
-                        <canvas id="oleoIntervaloKmChart"></canvas>
-                    </div>
-                </div>
-            </div>
-            
-            <div id="Outros" class="tab-content">
-                <div class="card">
-                    <h2>Indicadores de Outros Gastos</h2>
-                     <div class="indicator-container">
-                        <div class="indicator">
-                            <p>Total (sem valor da moto)</p>
-                            <span class="value" id="total-outros"></span>
-                        </div>
-                    </div>
-                </div>
-                <div class="card">
-                    <h2>Top 10 Maiores Gastos (Outros)</h2>
-                    <div class="chart-container" style="height: 450px;">
-                        <canvas id="outrosTopChart"></canvas>
-                    </div>
-                </div>
-            </div>
-            
-            <div id="Infracoes" class="tab-content">
-                <div class="card">
-                    <h2>Resumo de Infrações</h2>
-                     <div class="indicator-container">
-                        <div class="indicator">
-                            <p>Gasto Total</p>
-                            <span class="value" id="total-infracoes"></span>
-                        </div>
-                        <div class="indicator">
-                            <p>Total de Infrações</p>
-                            <span class="value" id="contagem-infracoes"></span>
-                        </div>
-                         <div class="indicator">
-                            <p>Total de Pontos</p>
-                            <span class="value" id="total-pontos"></span>
-                        </div>
-                    </div>
-                </div>
-                <div class="card">
-                    <h2>Detalhes</h2>
-                    <div id="infracoes-lista"></div>
-                </div>
-            </div>
-        </div>
+  <div class="app-container">
+    <div class="tab-nav">
+      <button class="tab-link active" data-tab="registrar">Registrar</button>
+      <button class="tab-link" data-tab="relatorio">Relatório</button>
     </div>
 
-    <script>
-        // --- LÓGICA DAS ABAS ---
-        function openTab(evt, tabName) {
-            let i, tabcontent, tablinks;
-            tabcontent = document.getElementsByClassName("tab-content");
-            for (i = 0; i < tabcontent.length; i++) {
-                tabcontent[i].style.display = "none";
-            }
-            tablinks = document.getElementsByClassName("tab-button");
-            for (i = 0; i < tablinks.length; i++) {
-                tablinks[i].className = tablinks[i].className.replace(" active", "");
-            }
-            document.getElementById(tabName).style.display = "block";
-            evt.currentTarget.className += " active";
-        }
-        
-        // --- FUNÇÃO PRINCIPAL PARA CARREGAR O PAINEL ---
-        async function loadDashboard() {
-            const url = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSXYUEcvzBEg1AQ5754QmQUGb73zVzI6LEI-WmdAxHx1N2_5ZGLPP0DobNZQW1-IUk1qZVOiu0SZ965/pub?gid=817947441&single=true&output=csv';
-            const loadingIndicator = document.getElementById('loading-indicator');
-            const dashboardElement = document.getElementById('dashboard');
+    <div class="tab-content">
+      <div id="registrar" class="tab-pane active">
+        <form id="despesa-form">
+          <div class="user-date-group">
+            <div class="user-select-group">
+              <img id="funcionario-img" src="https://i.imgur.com/xsfzmyg.jpeg" alt="Foto" />
+              <div class="user-selector-container">
+                <input type="text" id="user-search-input" class="user-select-input" placeholder="Selecione ou digite..." autocomplete="off">
+                <div id="user-dropdown" class="user-dropdown-list hidden"></div>
+              </div>
+            </div>
+            <input type="hidden" id="nome" name="nome" required>
+            <input type="date" id="data" name="data" class="date-input" required />
+          </div>
+          <p id="user-error-message" class="error-message hidden">Usuário inválido. Selecione um nome da lista.</p>
 
-            try {
-                const response = await fetch(url);
-                if (!response.ok) {
-                    throw new Error(`Erro na rede: ${response.statusText}`);
-                }
-                const rawData = await response.text();
-                
-                processAndRenderData(rawData);
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="forma_pagamento">Forma de pagamento</label>
+              <select id="forma_pagamento" name="forma_pagamento" class="form-control"></select>
+            </div>
+            <div class="form-group">
+              <label for="grupo">Categoria</label>
+              <select id="grupo" name="grupo" class="form-control"></select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="descricao">Descrição</label>
+            <input type="text" id="descricao" name="descricao" class="form-control" placeholder="Ex: Almoço" />
+          </div>
+          <div class="form-group">
+            <label for="valor">Valor <span id="limite-restante" class="limit-info"></span></label>
+            <input type="text" id="valor" name="valor" class="form-control" placeholder="R$ 0,00" />
+          </div>
+          <div class="form-group">
+            <label>Nota fiscal</label>
+            <div class="file-upload-area">
+              <span id="nome-arquivo" class="file-info">Nenhum arquivo selecionado</span>
+              <div class="button-group">
+                <button type="button" id="btn-capturar" class="btn btn-secondary">Fotografar</button>
+                <button type="button" id="btn-selecionar" class="btn btn-secondary">Selecionar</button>
+              </div>
+            </div>
+            <input type="file" id="nota_fiscal_camera" name="nota_fiscal" accept="image/*" capture="environment" style="display:none" />
+            <input type="file" id="nota_fiscal_arquivo" name="nota_fiscal" accept="image/*" style="display:none" />
+            <input type="text" id="nota_fiscal_url" name="nota_fiscal_url" style="display:none" />
+          </div>
+          <button type="submit" class="btn btn-primary">Adicionar despesa</button>
+        </form>
+      </div>
 
-                loadingIndicator.style.display = 'none';
-                dashboardElement.style.display = 'block';
-
-            } catch (error) {
-                console.error('Falha ao buscar ou processar os dados:', error);
-                loadingIndicator.innerHTML = '<p style="color: red;">Falha ao carregar os dados. Verifique sua conexão ou a URL da planilha.</p>';
-            }
-        }
-        
-        function processAndRenderData(rawData) {
-            const formatCurrency = (value) => (value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-            const formatNumber = (value, decimals = 0) => (value || 0).toFixed(decimals).replace('.', ',');
-
-            const rows = rawData.trim().split('\n').slice(1);
-            
-            // LÓGICA DE PARSING CORRIGIDA
-            const data = rows.map(row => {
-                const parts = row.split(',');
-                const categoria = parts[0];
-                const data = parts[1];
-                const chave = parts[2];
-                
-                // Junta as partes restantes do valor (caso o valor em si tenha vírgulas)
-                const valorStr = parts.slice(3).join(',');
-                
-                // Limpa o valor: remove pontos de milhar e substitui a vírgula decimal por ponto
-                const valorLimpo = valorStr.replace(/\./g, '').replace(',', '.').trim();
-                
-                // Converte para número. Se falhar, retorna 0 para evitar NaN
-                const valorNum = parseFloat(valorLimpo) || 0;
-
-                return { Categoria: categoria, Data: data, Chave: chave, Valor: valorNum };
-            });
-
-            const gastos = {};
-            data.forEach(item => {
-                if (!gastos[item.Categoria]) { gastos[item.Categoria] = []; }
-                gastos[item.Categoria].push(item);
-            });
-            
-            // --- CÁLCULOS ---
-            // Gasolina
-            const gasolinaData = gastos['Gasolina'] || [];
-            const totalGasolina = gasolinaData.filter(g => g.Chave === 'Valor total').reduce((sum, item) => sum + item.Valor, 0);
-            const kmRegistros = gasolinaData.filter(g => g.Chave === 'Quilometragem').map(g => g.Valor);
-            const kmMax = Math.max(...kmRegistros, 0);
-            const kmMin = Math.min(...kmRegistros, 0);
-            const kmTotal = kmMax - kmMin;
-            
-            const precosLitro = gasolinaData.filter(g => g.Chave === 'Valor do litro');
-            const precoMedioLitro = precosLitro.reduce((sum, item) => sum + item.Valor, 0) / precosLitro.length;
-            
-            let totalLitros = 0;
-            gasolinaData.forEach(item => {
-                 if(item.Chave === 'Valor total') {
-                    const precoDoDia = gasolinaData.find(p => p.Data === item.Data && p.Chave === 'Valor do litro');
-                    if(precoDoDia) { totalLitros += item.Valor / precoDoDia.Valor; }
-                 }
-            });
-            const consumoMedio = kmTotal / totalLitros;
-            
-            // Óleo
-            const oleoData = gastos['Óleo'] || [];
-            const oleoValores = oleoData.filter(o => o.Chave === 'Valor').map(v => v.Valor);
-            const totalOleo = oleoValores.reduce((sum, v) => sum + v, 0);
-            const precoMedioOleo = totalOleo / oleoValores.length;
-            
-            const oleoKmRegistros = oleoData.filter(o => o.Chave === 'Quilometragem').map(v => v.Valor).sort((a, b) => a - b);
-            const kmIntervalosOleo = [];
-            for (let i = 1; i < oleoKmRegistros.length; i++) {
-                kmIntervalosOleo.push(oleoKmRegistros[i] - oleoKmRegistros[i-1]);
-            }
-            const kmMedioOleo = kmIntervalosOleo.reduce((sum, v) => sum + v, 0) / kmIntervalosOleo.length;
-
-            // Infrações
-            const infracoesData = gastos['Infração'] || [];
-            const totalInfracoes = infracoesData.filter(i => i.Chave === 'Valor').reduce((sum, item) => sum + item.Valor, 0);
-            const contagemInfracoes = infracoesData.filter(i => i.Chave === 'Valor').length;
-            const totalPontos = infracoesData.filter(i => i.Chave === 'Pontos').reduce((sum, item) => sum + item.Valor, 0);
-
-            // Outros
-            const outrosData = gastos['Outros'] || [];
-            const valorMoto = outrosData.find(o => o.Chave === 'Moto')?.Valor || 0;
-            const totalOutros = outrosData.reduce((sum, item) => sum + item.Valor, 0) - valorMoto;
-            const outrosTop = outrosData.filter(o => o.Chave !== 'Moto').sort((a,b) => b.Valor - a.Valor).slice(0, 10);
-            
-            // Geral
-            const totalGeralSemMoto = totalGasolina + totalOleo + totalInfracoes + totalOutros;
-            const custoKmGeral = totalGeralSemMoto / kmTotal;
-
-            // --- ATUALIZAÇÃO DO HTML ---
-            document.getElementById('total-gasolina').textContent = formatCurrency(totalGasolina);
-            document.getElementById('consumo-medio').textContent = `${(consumoMedio).toFixed(2)} km/L`;
-            document.getElementById('preco-medio-litro').textContent = formatCurrency(precoMedioLitro);
-            
-            document.getElementById('total-oleo').textContent = formatCurrency(totalOleo);
-            document.getElementById('preco-medio-oleo').textContent = formatCurrency(precoMedioOleo);
-            document.getElementById('km-medio-oleo').textContent = `${formatNumber(kmMedioOleo)} km`;
-
-            document.getElementById('total-outros').textContent = formatCurrency(totalOutros);
-            
-            document.getElementById('total-infracoes').textContent = formatCurrency(totalInfracoes);
-            document.getElementById('contagem-infracoes').textContent = contagemInfracoes;
-            document.getElementById('total-pontos').textContent = totalPontos;
-
-            document.getElementById('infracoes-lista').innerHTML = '';
-            infracoesData.filter(i => i.Chave === 'Motivo').forEach(inf => {
-                const data = inf.Data;
-                const motivo = data.split(',')[3] || inf.Valor;
-                const tipo = infracoesData.find(i => i.Data === data && i.Chave === 'Tipo').Valor;
-                const valor = infracoesData.find(i => i.Data === data && i.Chave === 'Valor').Valor;
-                const pontos = infracoesData.find(i => i.Data === data && i.Chave === 'Pontos').Valor;
-
-                document.getElementById('infracoes-lista').innerHTML += `
-                    <div class="infraction-card">
-                        <h3>${motivo}</h3>
-                        <div class="infraction-details">
-                            <span><strong>Data:</strong> ${data}</span>
-                            <span><strong>Tipo:</strong> ${tipo}</span>
-                            <span><strong>Pontos:</strong> ${pontos}</span>
-                            <span><strong>Valor:</strong> ${formatCurrency(valor)}</span>
-                        </div>
-                    </div>
-                `;
-            });
-            
-            document.getElementById('total-geral-sem-moto').textContent = formatCurrency(totalGeralSemMoto);
-            document.getElementById('custo-km-geral').textContent = `${formatCurrency(custoKmGeral)}/km`;
-
-            // --- CONFIGURAÇÃO E CRIAÇÃO DOS GRÁFICOS ---
-            Chart.defaults.font.family = "'Inter', sans-serif";
-            Chart.defaults.color = '#8a99a8';
-            Chart.defaults.plugins.legend.position = 'bottom';
-            Chart.defaults.plugins.tooltip.backgroundColor = '#2c3e50';
-            Chart.defaults.plugins.tooltip.titleFont = { size: 14, weight: 'bold' };
-            Chart.defaults.plugins.tooltip.bodyFont = { size: 12 };
-            Chart.defaults.plugins.tooltip.padding = 12;
-            Chart.defaults.plugins.tooltip.cornerRadius = 8;
-            Chart.defaults.plugins.tooltip.boxPadding = 4;
-            
-            const commonOptions = {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    x: { grid: { display: false }, ticks: { color: '#8a99a8' } },
-                    y: { grid: { color: '#e8edf3' }, ticks: { color: '#8a99a8' } }
-                },
-                plugins: {
-                    title: { display: true, font: { size: 16, weight: 'bold' }, color: '#2c3e50', padding: { bottom: 20 } }
-                }
-            };
-            
-            new Chart(document.getElementById('geralChart'), {
-                type: 'bar',
-                data: {
-                    labels: ['Gasolina', 'Outros', 'Óleo', 'Infrações'],
-                    datasets: [{
-                        label: 'Gasto por Categoria',
-                        data: [totalGasolina, totalOutros, totalOleo, totalInfracoes],
-                        backgroundColor: ['#3498db', '#2ecc71', '#f1c40f', '#e74c3c'],
-                        borderRadius: 6
-                    }]
-                },
-                options: { ...commonOptions, indexAxis: 'y', plugins: {...commonOptions.plugins, title: {...commonOptions.plugins.title, text: 'Distribuição de Gastos por Categoria'} } }
-            });
-            
-            const gastosGasolinaPorMes = {};
-            gasolinaData.filter(g => g.Chave === 'Valor total').forEach(g => {
-                const [dia, mes, ano] = g.Data.split('/');
-                const mesAno = `${mes}/${ano}`;
-                if (!gastosGasolinaPorMes[mesAno]) { gastosGasolinaPorMes[mesAno] = 0; }
-                gastosGasolinaPorMes[mesAno] += g.Valor;
-            });
-
-            new Chart(document.getElementById('gasolinaChart'), {
-                type: 'bar',
-                data: {
-                    labels: Object.keys(gastosGasolinaPorMes),
-                    datasets: [{
-                        label: 'Gasto com Gasolina',
-                        data: Object.values(gastosGasolinaPorMes),
-                        backgroundColor: '#3498db',
-                        borderRadius: 6
-                    }]
-                },
-                options: {...commonOptions, plugins: {...commonOptions.plugins, title: {...commonOptions.plugins.title, text: 'Gasto Mensal com Gasolina'}}}
-            });
-
-            new Chart(document.getElementById('precoLitroChart'), {
-                type: 'line',
-                data: {
-                    labels: precosLitro.map(p => p.Data),
-                    datasets: [{
-                        label: 'Preço do Litro',
-                        data: precosLitro.map(p => p.Valor),
-                        borderColor: '#f1c40f',
-                        backgroundColor: 'rgba(241, 196, 15, 0.1)',
-                        fill: true,
-                        tension: 0.4
-                    }]
-                },
-                options: {...commonOptions, plugins: {...commonOptions.plugins, title: {...commonOptions.plugins.title, text: 'Evolução do Preço do Litro'}}}
-            });
-            
-            new Chart(document.getElementById('oleoIntervaloKmChart'), {
-                type: 'bar',
-                data: {
-                    labels: kmIntervalosOleo.map((_, i) => `Troca ${i+1}`),
-                    datasets: [{
-                        label: 'KM Rodados',
-                        data: kmIntervalosOleo,
-                        backgroundColor: '#2ecc71',
-                        borderRadius: 6
-                    }]
-                },
-                options: {...commonOptions, plugins: {...commonOptions.plugins, title: {...commonOptions.plugins.title, text: 'KM Rodados entre Trocas de Óleo'}}}
-            });
-
-            new Chart(document.getElementById('outrosTopChart'), {
-                type: 'bar',
-                data: {
-                    labels: outrosTop.map(o => o.Chave),
-                    datasets: [{
-                        label: 'Valor Gasto',
-                        data: outrosTop.map(o => o.Valor),
-                        backgroundColor: '#9b59b6',
-                        borderRadius: 6
-                    }]
-                },
-                options: { ...commonOptions, indexAxis: 'y', plugins: {...commonOptions.plugins, title: {...commonOptions.plugins.title, text: 'Top 10 Maiores Gastos (Outros)'} } }
-            });
-        }
-        
-        document.addEventListener('DOMContentLoaded', loadDashboard);
-    </script>
+      <div id="relatorio" class="tab-pane">
+        <form id="report-form">
+            <div class="user-select-group report-user">
+              <img id="relatorio-funcionario-img" src="https://i.imgur.com/xsfzmyg.jpeg" alt="Foto" />
+              <div class="user-selector-container">
+                  <input type="text" id="relatorio-user-search-input" class="user-select-input" placeholder="Selecione ou digite..." autocomplete="off">
+                  <div id="relatorio-user-dropdown" class="user-dropdown-list hidden">
+                      </div>
+              </div>
+            </div>
+            <input type="hidden" id="relatorio-nome-hidden">
+            <p id="relatorio-user-error-message" class="error-message hidden">Usuário inválido. Selecione um nome da lista.</p>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="dataInicio">Data inicial</label>
+                    <input type="date" id="dataInicio" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="dataFim">Data final</label>
+                    <input type="date" id="dataFim" class="form-control">
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary">Baixar relatório</button>
+        </form>
+      </div>
+    </div>
+  </div>
 </body>
 </html>

@@ -18,14 +18,14 @@ body {
     padding: 20px;
     display: flex;
     justify-content: center;
-    align-items: center; /* AJUSTE: Centraliza verticalmente na tela */
+    align-items: center; 
     min-height: 100vh;
     color: var(--text-dark);
 }
 
 .app-container {
     width: 100%;
-    max-width: 500px; /* Largura compacta de um app */
+    max-width: 500px; 
     background-color: var(--container-bg);
     border-radius: 20px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
@@ -125,26 +125,20 @@ select.form-control {
     border-radius: 50%;
     object-fit: cover;
 }
-.user-select-group select {
-    appearance: none;
-    -webkit-appearance: none;
-    -moz-appearance: none;
+/* NOVO ESTILO: Para o campo de input de usuário */
+.user-select-input {
+    flex: 1; /* Ocupa o espaço disponível */
     border: none;
     background-color: transparent;
     font-size: 1.2em;
     font-weight: 700;
     color: var(--text-dark);
-    cursor: pointer; /* Adiciona feedback de clique */
-    padding-right: 25px; /* Espaço para a nova seta */
-    /* Seta customizada com SVG para melhor qualidade */
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%238a8a8e' viewBox='0 0 16 16'%3E%3Cpath fill-rule='evenodd' d='M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 4px center;
-    background-size: 16px;
+    padding: 5px 0;
 }
-.user-select-group select:focus {
+.user-select-input:focus {
     outline: none;
 }
+
 .user-select-group.report-user {
     margin-bottom: 24px;
 }
@@ -228,19 +222,118 @@ select.form-control {
     cursor: not-allowed;
 }
 
-/* Responsividade para telas menores */
+/* Contêiner principal para o campo de busca e a lista suspensa */
+.user-selector-container {
+    position: relative; /* Necessário para posicionar a lista suspensa */
+    flex: 1;
+}
+
+/* A lista suspensa de usuários */
+.user-dropdown-list {
+    position: absolute;
+    top: 100%; /* Posiciona a lista logo abaixo do campo de input */
+    left: 0;
+    right: 0;
+    background-color: var(--container-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    max-height: 250px; /* Altura máxima para evitar listas muito longas */
+    overflow-y: auto; /* Adiciona scroll se a lista for maior que a altura máxima */
+    z-index: 1000; /* Garante que a lista fique sobre outros elementos */
+    margin-top: 6px;
+}
+
+/* Esconde a lista por padrão */
+.user-dropdown-list.hidden {
+    display: none;
+}
+
+/* Cada item (usuário) na lista */
+.user-dropdown-item {
+    display: flex;
+    align-items: center;
+    padding: 10px 12px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+/* Efeito ao passar o mouse sobre um item */
+.user-dropdown-item:hover {
+    background-color: var(--input-bg);
+}
+
+/* Imagem do usuário dentro da lista */
+.user-dropdown-item img {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    margin-right: 12px;
+    object-fit: cover;
+}
+
+/* Nome do usuário dentro da lista */
+.user-dropdown-item span {
+    font-size: 0.95em;
+    font-weight: 500;
+    color: var(--text-dark);
+}
+
+/* Mensagem para quando não há resultados na busca */
+.user-dropdown-item.no-results {
+    justify-content: center;
+    color: var(--text-light);
+    cursor: default;
+}
+.user-dropdown-item.no-results:hover {
+    background-color: transparent;
+}
+
+/* Mensagem de erro para usuário inválido */
+.error-message {
+    font-size: 0.8em;
+    color: var(--danger-color);
+    margin: -12px 0 12px 0; /* Posicionamento abaixo do grupo de usuário */
+    font-weight: 500;
+}
+.error-message.hidden {
+    display: none;
+}
+
+/* --- Responsividade para telas menores (COM MELHORIAS) --- */
 @media (max-width: 480px) {
     body {
         padding: 0;
-        align-items: flex-start; /* Em telas pequenas, começa do topo */
+        align-items: flex-start; /* Em telas pequenas, o container começa do topo */
     }
     .app-container {
         border-radius: 0;
         min-height: 100vh;
         box-shadow: none;
+        padding: 16px; /* Diminui o padding lateral */
     }
     .form-grid {
         grid-template-columns: 1fr;
-        gap: 0;
+        gap: 0; /* Remove o gap para um visual mais compacto */
+    }
+    .user-date-group {
+        flex-direction: column; /* Coloca o nome e a data um em cima do outro */
+        align-items: flex-start; /* Alinha à esquerda */
+        gap: 16px; /* Adiciona espaço vertical */
+    }
+    .user-select-input {
+        font-size: 1.1em; /* Reduz um pouco o tamanho do nome */
+    }
+    .file-upload-area {
+        flex-direction: column; /* Empilha o nome do arquivo e os botões */
+        align-items: stretch; /* Estica os itens para preencher a largura */
+        gap: 10px;
+    }
+    .file-info {
+        text-align: center; /* Centraliza o nome do arquivo */
+        padding: 4px 0;
+    }
+    .button-group {
+        flex-direction: column; /* Botões um em cima do outro */
     }
 }

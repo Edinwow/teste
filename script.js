@@ -8,83 +8,260 @@ document.addEventListener('DOMContentLoaded', () => {
     tabLinks.forEach(link => {
         link.addEventListener('click', () => {
             const tabId = link.getAttribute('data-tab');
-
             tabLinks.forEach(item => item.classList.remove('active'));
             tabPanes.forEach(item => item.classList.remove('active'));
-
             link.classList.add('active');
             document.getElementById(tabId).classList.add('active');
-
-            if (tabId === 'registrar') {
-                configurarDataAtual();
-            }
         });
     });
 
     // ===============================
-    // DADOS INTERNOS DA APLICAÇÃO
+    // DADOS DA APLICAÇÃO
     // ===============================
-    const usuarios = [
-        { nome: 'Edson Guimarães', imagem: 'https://i.imgur.com/xsfzmyg.jpeg' },
-        { nome: 'Henrique Cabral', imagem: 'https://i.imgur.com/MLri28V.jpeg' },
-        { nome: 'Cynthia Blank', imagem: 'https://i.imgur.com/mQnu7UK.jpeg' },
-        { nome: 'Santiago Silva', imagem: 'https://i.imgur.com/FsOZRK3.jpeg' },
-        { nome: 'Mariana Barcelos', imagem: 'https://i.imgur.com/Ovkt0nB.jpeg' },
-        { nome: 'Bruno Batista', imagem: 'https://i.imgur.com/cMnGiYe.jpeg' }
-    ];
-
     const formasDePagamento = ['Cartão de crédito', 'Dinheiro'];
     const categorias = ['Alimentação', 'Deslocamento', 'Outros'];
+    const DESPESAS_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQCRWa9HQrijm3a3qJyH89vQnpqm2gMTGqBmWi5hUQnvOJjSfhZvGrPDOSDBMR6ksgMHjXXo6p7zdXG/pub?gid=0&single=true&output=csv';
+    const USUARIOS_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQCRWa9HQrijm3a3qJyH89vQnpqm2gMTGqBmWi5hUQnvOJjSfhZvGrPDOSDBMR6ksgMHjXXo6p7zdXG/pub?gid=62546932&single=true&output=csv';
+    
+    // ATENÇÃO: COLE A URL DO SEU APP SCRIPT AQUI DENTRO DAS ASPAS
+    const WEBAPP_URL = 'COLE_A_URL_DO_SEU_NOVO_SCRIPT_AQUI';
 
-    // URLs para a planilha (leitura e escrita)
-    const DESPESAS_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSvfKNijsXtDu3AKopOksK_9sEIpMI9O7sSCx3aX3Mo7IqspCy6mVI1jPKO939WxbKpnntTCfWoQu5R/pub?gid=0&single=true&output=csv';
-    const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbwY1IiBheTmS421ThMhetm3YBGVBZg3nEb8hYYiWPbns8Blnl5gK7fA0hssb4N_CoXIMw/exec';
-
-    // Variáveis globais
     let despesasData = [];
+    let listaDeUsuarios = [];
 
     // ===============================
     // SELETORES GLOBAIS DE ELEMENTOS
     // ===============================
     const formRegistro = document.getElementById('despesa-form');
-    const selectNome = document.getElementById('nome');
+    const formRelatorio = document.getElementById('report-form');
+
+    // Elementos do seletor de REGISTRO
+    const userSearchInput = document.getElementById('user-search-input');
+    const userDropdown = document.getElementById('user-dropdown');
+    const hiddenNomeInput = document.getElementById('nome');
+    const userErrorMessage = document.getElementById('user-error-message');
     const imgFuncionario = document.getElementById('funcionario-img');
+
+    // Elementos do seletor de RELATÓRIO
+    const reportUserSearchInput = document.getElementById('relatorio-user-search-input');
+    const reportUserDropdown = document.getElementById('relatorio-user-dropdown');
+    const reportHiddenNomeInput = document.getElementById('relatorio-nome-hidden');
+    const reportUserErrorMessage = document.getElementById('relatorio-user-error-message');
+    const reportImgFuncionario = document.getElementById('relatorio-funcionario-img');
+
+    // Outros elementos
     const selectForma = document.getElementById('forma_pagamento');
     const selectGrupo = document.getElementById('grupo');
     const inputValor = document.getElementById('valor');
     const inputData = document.getElementById('data');
-    const nomeArquivoSpan = document.getElementById('nome-arquivo');
-    const inputCamera = document.getElementById('nota_fiscal_camera');
-    const inputArquivo = document.getElementById('nota_fiscal_arquivo');
 
     // ===============================
-    // FUNÇÕES DE INICIALIZAÇÃO E POPULAÇÃO
+    // FUNÇÃO REUTILIZÁVEL PARA O SELETOR DE USUÁRIO
     // ===============================
+    function setupUserSelector(searchInput, dropdown, hiddenInput, imgElement, errorMessage, isRegistroTab = false) {
+        // Popula a lista suspensa com usuários (filtrados ou todos)
+        const renderDropdown = (filter = '') => {
+            dropdown.innerHTML = '';
+            const filteredUsers = listaDeUsuarios.filter(user =>
+                user.nome.toLowerCase().includes(filter.toLowerCase())
+            );
 
-    function popularUsuarios() {
-        const selectsNome = [selectNome, document.getElementById('relatorio-nomeSelect')];
-        selectsNome.forEach(select => {
-            if (select) {
-                select.innerHTML = '';
-                usuarios.forEach(usuario => {
-                    const opt = document.createElement('option');
-                    opt.value = usuario.nome;
-                    opt.textContent = usuario.nome;
-                    select.appendChild(opt);
-                });
+            if (filteredUsers.length === 0) {
+                dropdown.innerHTML = '<div class="user-dropdown-item no-results">Nenhum resultado</div>';
+                return;
+            }
+
+            filteredUsers.forEach(user => {
+                const item = document.createElement('div');
+                item.className = 'user-dropdown-item';
+                item.innerHTML = `<img src="${user.imagem}" alt="${user.nome}"> <span>${user.nome}</span>`;
+                item.addEventListener('click', () => selectUser(user));
+                dropdown.appendChild(item);
+            });
+        };
+
+        // Ação ao selecionar um usuário da lista
+        const selectUser = (user) => {
+            searchInput.value = user.nome;
+            hiddenInput.value = user.nome;
+            imgElement.src = user.imagem;
+            dropdown.classList.add('hidden');
+            validateSelection();
+
+            // Apenas o seletor de registro salva e atualiza o limite
+            if (isRegistroTab) {
+                localStorage.setItem('ultimoUsuarioSalvo', user.nome);
+                atualizarLimiteAlimentacao();
+            }
+        };
+
+        // Valida se o nome no campo de busca é um usuário válido
+        const validateSelection = () => {
+            const nomeAtual = searchInput.value;
+            const usuarioValido = listaDeUsuarios.some(u => u.nome === nomeAtual);
+
+            if (usuarioValido) {
+                hiddenInput.value = nomeAtual;
+                errorMessage.classList.add('hidden');
+            } else {
+                hiddenInput.value = '';
+                if(nomeAtual !== '') errorMessage.classList.remove('hidden');
+                else errorMessage.classList.add('hidden');
+            }
+            return usuarioValido;
+        };
+
+        // Event Listeners
+        searchInput.addEventListener('focus', () => {
+            renderDropdown(searchInput.value);
+            dropdown.classList.remove('hidden');
+        });
+        searchInput.addEventListener('input', () => {
+            renderDropdown(searchInput.value);
+            validateSelection();
+        });
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.user-selector-container')) {
+                 dropdown.classList.add('hidden');
             }
         });
-        atualizarImagemUsuario();
+        
+        return { selectUser, validateSelection };
     }
 
+
+    // ===============================
+    // FUNÇÕES GERAIS DA APLICAÇÃO
+    // ===============================
+    async function carregarUsuarios() {
+        try {
+            const resp = await fetch(`${USUARIOS_CSV_URL}&t=${new Date().getTime()}`);
+            const csvText = await resp.text();
+            listaDeUsuarios = Papa.parse(csvText, { header: true, skipEmptyLines: true }).data.filter(u => u.nome && u.imagem);
+        } catch (error) { console.error("Falha ao carregar usuários.", error); }
+    }
+
+    function carregarUltimoUsuario(registroSelector, relatorioSelector) {
+        const ultimoUsuarioNome = localStorage.getItem('ultimoUsuarioSalvo');
+        const ultimoUsuario = listaDeUsuarios.find(u => u.nome === ultimoUsuarioNome);
+        if (ultimoUsuario) {
+            registroSelector.selectUser(ultimoUsuario);
+            relatorioSelector.selectUser(ultimoUsuario);
+        }
+    }
+    
+    function atualizarLimiteAlimentacao() {
+        const spanLimite = document.getElementById('limite-restante');
+        if (!spanLimite) return;
+        const nomeSelecionado = hiddenNomeInput.value;
+        const dataSelecionada = inputData?.value;
+        const despesaSelecionada = selectGrupo?.value;
+        if (despesaSelecionada !== 'Alimentação' || !nomeSelecionado) {
+            spanLimite.textContent = '';
+            return;
+        }
+        let somaDoDia = 0;
+        despesasData.forEach(row => {
+            if (!row.data || !row.nome || !row.grupo) return;
+            const partes = row.data.trim().split('/');
+            if (partes.length !== 3) return;
+            const dataDaLinhaFormatada = `${partes[2]}-${partes[1].padStart(2, '0')}-${partes[0].padStart(2, '0')}`;
+            if (row.nome.trim() === nomeSelecionado && dataDaLinhaFormatada === dataSelecionada && row.grupo.trim() === 'Alimentação') {
+                let valor = parseFloat((row.valor || '0').replace(/[^\d,]/g, '').replace(',', '.'));
+                if (!isNaN(valor)) somaDoDia += valor;
+            }
+        });
+        const restante = 170 - somaDoDia;
+        spanLimite.textContent = `Resta R$ ${restante.toFixed(2).replace('.', ',')}`;
+        spanLimite.classList.toggle('warning', restante <= 50 && restante > 0);
+        spanLimite.classList.toggle('danger', restante <= 0);
+    }
+    
+    // ===============================
+    // LÓGICA DOS FORMULÁRIOS
+    // ===============================
+    if (formRegistro) {
+        formRegistro.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const submitBtn = formRegistro.querySelector('button[type="submit"]');
+            
+            if (hiddenNomeInput.value === '') {
+                alert("Por favor, selecione um usuário válido da lista.");
+                return;
+            }
+            
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Enviando...';
+
+            const formData = new FormData(formRegistro);
+            const [ano, mes, dia] = formData.get('data').split('-');
+            formData.set('data', `${dia}/${mes}/${ano}`);
+            try {
+                const response = await fetch(WEBAPP_URL, { method: 'POST', body: formData });
+                const result = await response.json();
+                if (result.status === 'success') {
+                    alert('Despesa registrada com sucesso!');
+                    despesasData.push(Object.fromEntries(formData));
+                    const usuarioSelecionado = listaDeUsuarios.find(u => u.nome === hiddenNomeInput.value);
+                    formRegistro.reset();
+                    if (usuarioSelecionado) {
+                       setupUserSelector(userSearchInput, userDropdown, hiddenNomeInput, imgFuncionario, userErrorMessage, true).selectUser(usuarioSelecionado);
+                    }
+                    configurarDataAtual();
+                    document.getElementById('nome-arquivo').textContent = 'Nenhum arquivo selecionado';
+                    document.getElementById('nome-arquivo').classList.remove('selected');
+                    popularCategorias();
+                    atualizarLimiteAlimentacao();
+                } else { throw new Error(result.message || 'Ocorreu um erro no servidor.'); }
+            } catch (error) {
+                console.error("Erro ao registrar despesa:", error);
+                alert(`Falha ao registrar a despesa: ${error.message}`);
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Adicionar Despesa';
+            }
+        });
+    }
+
+    if(formRelatorio) {
+        formRelatorio.addEventListener('submit', (e) => {
+            e.preventDefault();
+            if (reportHiddenNomeInput.value === '') {
+                alert("Por favor, selecione um usuário válido da lista para gerar o relatório.");
+                return;
+            }
+            gerarRelatoriosPorCategoria(reportHiddenNomeInput.value);
+        });
+    }
+
+    // ===============================
+    // INICIALIZAÇÃO DA APLICAÇÃO
+    // ===============================
+    async function init() {
+        await carregarUsuarios();
+        
+        const registroSelector = setupUserSelector(userSearchInput, userDropdown, hiddenNomeInput, imgFuncionario, userErrorMessage, true);
+        const relatorioSelector = setupUserSelector(reportUserSearchInput, reportUserDropdown, reportHiddenNomeInput, reportImgFuncionario, reportUserErrorMessage);
+
+        popularFormasPagamento();
+        popularCategorias();
+        configurarCampoValor();
+        configurarDataAtual();
+        
+        carregarUltimoUsuario(registroSelector, relatorioSelector);
+        
+        await carregarDadosDespesas();
+        atualizarLimiteAlimentacao();
+    }
+    
+    // ===============================
+    // FUNÇÕES AUXILIARES E RESTANTES
+    // ===============================
     function popularFormasPagamento() {
         if (selectForma) {
             selectForma.innerHTML = '';
             formasDePagamento.forEach(forma => {
-                const opt = document.createElement('option');
-                opt.value = forma;
-                opt.textContent = forma;
-                selectForma.appendChild(opt);
+                selectForma.appendChild(new Option(forma, forma));
             });
         }
     }
@@ -93,19 +270,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (selectGrupo) {
             selectGrupo.innerHTML = '';
             categorias.forEach(cat => {
-                const opt = document.createElement('option');
-                opt.value = cat;
-                opt.textContent = cat;
-                selectGrupo.appendChild(opt);
+                selectGrupo.appendChild(new Option(cat, cat));
             });
             selectGrupo.value = 'Alimentação';
-        }
-    }
-
-    function atualizarImagemUsuario() {
-        const usuarioSelecionado = usuarios.find(u => u.nome === selectNome.value);
-        if (usuarioSelecionado && imgFuncionario) {
-            imgFuncionario.src = usuarioSelecionado.imagem;
         }
     }
 
@@ -132,24 +299,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function atualizarNomeArquivo(input) {
-        if (input.files.length > 0) {
-            nomeArquivoSpan.textContent = input.files[0].name;
-            nomeArquivoSpan.classList.add('selected');
-        }
-    }
-
-    // ===============================
-    // LÓGICA PRINCIPAL (COM CORREÇÃO)
-    // ===============================
-
     async function carregarDadosDespesas() {
         try {
             const resp = await fetch(`${DESPESAS_CSV_URL}&t=${new Date().getTime()}`);
             const csvText = await resp.text();
             despesasData = Papa.parse(csvText, {
                 header: true,
-                skipEmptyLines: true
+                skipEmptyLines: true,
+                transformHeader: header => header.trim()
             }).data;
         } catch (error) {
             console.error("Não foi possível carregar os dados de despesas.", error);
@@ -157,321 +314,153 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- FUNÇÃO CORRIGIDA ---
-    function atualizarLimiteAlimentacao() {
-        const spanLimite = document.getElementById('limite-restante');
-        if (!spanLimite) return;
-
-        const nomeSelecionado = selectNome?.value;
-        const dataSelecionada = inputData?.value; // Formato: AAAA-MM-DD
-        const despesaSelecionada = selectGrupo?.value;
-
-        if (despesaSelecionada !== 'Alimentação') {
-            spanLimite.textContent = '';
-            return;
-        }
-
-        if (!nomeSelecionado || !dataSelecionada) {
-            spanLimite.textContent = 'Resta R$ 170,00';
-            return;
-        }
-
-        let somaDoDia = 0;
-
-        despesasData.forEach(row => {
-            if (!row.data || !row.nome || !row.grupo) return; // Pula linhas inválidas
-
-            // Lógica de comparação de data robusta
-            const dataDaLinha = row.data.trim(); // Formato esperado: DD/MM/AAAA
-            const partes = dataDaLinha.split('/');
-            
-            // Pula a linha se o formato da data na planilha for inesperado
-            if (partes.length !== 3) return; 
-
-            // Converte a data da linha para AAAA-MM-DD para uma comparação segura
-            const dataDaLinhaFormatada = `${partes[2]}-${partes[1].padStart(2, '0')}-${partes[0].padStart(2, '0')}`;
-            
-            // Compara nome, data (já formatada) e grupo
-            if (row.nome.trim() === nomeSelecionado && dataDaLinhaFormatada === dataSelecionada && row.grupo.trim() === 'Alimentação') {
-                let valorStr = (row.valor || '').replace(/[^\d,]/g, '').replace(',', '.');
-                let valor = parseFloat(valorStr);
-                if (!isNaN(valor)) {
-                    somaDoDia += valor;
-                }
-            }
-        });
-
-        const restante = 170 - somaDoDia;
-        spanLimite.textContent = `Resta R$ ${restante.toFixed(2).replace('.', ',')}`;
-        spanLimite.classList.toggle('warning', restante <= 50 && restante > 0);
-        spanLimite.classList.toggle('danger', restante <= 0);
-    }
-
-
-    if (formRegistro) {
-        formRegistro.addEventListener('submit', async function(e) {
-            e.preventDefault();
-            const submitBtn = formRegistro.querySelector('button[type="submit"]');
-            submitBtn.disabled = true;
-            submitBtn.textContent = 'Enviando...';
-
-            const formData = new FormData(formRegistro);
-            const [ano, mes, dia] = inputData.value.split('-');
-            const dataFormatadaParaEnvio = `${dia}/${mes}/${ano}`;
-            formData.set('data', dataFormatadaParaEnvio);
-
-            const params = new URLSearchParams();
-            formData.forEach((value, key) => params.append(key, value));
-
-            try {
-                await fetch(WEBAPP_URL, {
-                    method: 'POST',
-                    body: params
-                });
-                
-                const novaDespesa = {
-                    nome: selectNome.value,
-                    data: dataFormatadaParaEnvio,
-                    grupo: selectGrupo.value,
-                    valor: inputValor.value,
-                    descricao: document.getElementById('descricao').value,
-                    forma_pagamento: selectForma.value,
-                    nota_fiscal_url: document.getElementById('nota_fiscal_url').value
-                };
-                despesasData.push(novaDespesa);
-                
-                alert('Despesa registrada com sucesso!');
-
-            } catch (err) {
-                console.error("Erro no envio:", err);
-                alert('Erro ao registrar despesa. Verifique sua conexão.');
-            }
-
-            const usuarioSelecionado = selectNome.value;
-            formRegistro.reset();
-            selectNome.value = usuarioSelecionado;
-            configurarDataAtual();
-            nomeArquivoSpan.textContent = 'Nenhum arquivo selecionado';
-            nomeArquivoSpan.classList.remove('selected');
-            popularCategorias();
-
-            submitBtn.disabled = false;
-            submitBtn.textContent = 'Adicionar Despesa';
-
-            atualizarLimiteAlimentacao();
-        });
-    }
-
-    // ===============================
-    // EVENT LISTENERS E INICIALIZAÇÃO
-    // ===============================
-    selectNome?.addEventListener('change', () => {
-        atualizarImagemUsuario();
-        atualizarLimiteAlimentacao();
-    });
-    inputData?.addEventListener('change', atualizarLimiteAlimentacao);
-    selectGrupo?.addEventListener('change', atualizarLimiteAlimentacao);
-
-    inputCamera?.addEventListener('change', () => atualizarNomeArquivo(inputCamera));
-    inputArquivo?.addEventListener('change', () => atualizarNomeArquivo(inputArquivo));
-
-    popularUsuarios();
-    popularFormasPagamento();
-    popularCategorias();
-    configurarCampoValor();
-    configurarDataAtual();
-    carregarDadosDespesas().then(atualizarLimiteAlimentacao);
-
-
-    // ===============================
-    // LÓGICA DE GERAÇÃO DE RELATÓRIO (MODIFICADA)
-    // ===============================
-    const formRelatorio = document.getElementById('report-form');
-    if (formRelatorio) {
-        const selectNomeRelatorio = document.getElementById('relatorio-nomeSelect');
-        const imgFuncionarioRelatorio = document.getElementById('relatorio-funcionario-img');
+    async function gerarRelatoriosPorCategoria(nomeSelecionado) {
         const submitBtnRelatorio = formRelatorio.querySelector('button[type="submit"]');
+        const originalBtnText = submitBtnRelatorio.textContent;
+        submitBtnRelatorio.textContent = 'Gerando relatórios...';
+        submitBtnRelatorio.disabled = true;
 
-        selectNomeRelatorio?.addEventListener('change', () => {
-            const usuario = usuarios.find(u => u.nome === selectNomeRelatorio.value);
-            if (usuario && imgFuncionarioRelatorio) {
-                imgFuncionarioRelatorio.src = usuario.imagem;
-            }
+        const { jsPDF } = window.jspdf;
+        const dataInicio = document.getElementById('dataInicio').value;
+        const dataFim = document.getElementById('dataFim').value;
+
+        const dadosFiltrados = despesasData.filter(row => {
+            if (!row.data || !row.descricao || !row.nota_fiscal_url || !row.nome) return false;
+            const partes = row.data.split('/');
+            if (partes.length !== 3) return false;
+            const dataRow = `${partes[2]}-${partes[1].padStart(2, '0')}-${partes[0].padStart(2, '0')}`;
+            const dentroDoIntervalo = (!dataInicio || dataRow >= dataInicio) && (!dataFim || dataRow <= dataFim);
+            const nomeConfere = row.nome.trim() === nomeSelecionado;
+            return dentroDoIntervalo && nomeConfere;
         });
 
-        formRelatorio.addEventListener('submit', (e) => {
-            e.preventDefault();
-            gerarRelatoriosPorCategoria();
-        });
-
-        async function gerarRelatoriosPorCategoria() {
-            const originalBtnText = submitBtnRelatorio.textContent;
-            submitBtnRelatorio.textContent = 'Gerando relatórios...';
-            submitBtnRelatorio.disabled = true;
-
-            const { jsPDF } = window.jspdf;
-            const nomeSelecionado = selectNomeRelatorio.value;
-            const dataInicio = document.getElementById('dataInicio').value;
-            const dataFim = document.getElementById('dataFim').value;
-
-            const dadosFiltrados = despesasData.filter(row => {
-                if (!row.data || !row.descricao || !row.nota_fiscal_url || !row.nome) return false;
-                const partes = row.data.split('/');
-                if (partes.length !== 3) return false;
-                const dataRow = `${partes[2]}-${partes[1].padStart(2, '0')}-${partes[0].padStart(2, '0')}`;
-                const dentroDoIntervalo = (!dataInicio || dataRow >= dataInicio) && (!dataFim || dataRow <= dataFim);
-                const nomeConfere = row.nome.trim() === nomeSelecionado;
-                return dentroDoIntervalo && nomeConfere;
-            });
-
-            if (dadosFiltrados.length === 0) {
-                alert('Nenhum dado encontrado para os filtros selecionados.');
-                submitBtnRelatorio.textContent = originalBtnText;
-                submitBtnRelatorio.disabled = false;
-                return;
-            }
-
-            const despesasPorCategoria = dadosFiltrados.reduce((acc, despesa) => {
-                const categoria = despesa.grupo || 'Sem Categoria';
-                if (!acc[categoria]) {
-                    acc[categoria] = [];
-                }
-                acc[categoria].push(despesa);
-                return acc;
-            }, {});
-
-            const zip = new JSZip();
-
-            for (const categoria in despesasPorCategoria) {
-                const pdf = new jsPDF();
-                const despesasDaCategoria = despesasPorCategoria[categoria];
-                let totalCategoria = 0;
-
-                pdf.setFont('helvetica', 'bold');
-                pdf.setFontSize(18);
-                pdf.text(`Relatório de despesas - ${categoria}`, 105, 20, { align: 'center' });
-
-                pdf.setFont('helvetica', 'normal');
-                pdf.setFontSize(12);
-                pdf.text(`Funcionário: ${nomeSelecionado}`, 14, 35);
-                pdf.text(`Período: ${dataInicio ? dataInicio.split('-').reverse().join('/') : 'N/A'} a ${dataFim ? dataFim.split('-').reverse().join('/') : 'N/A'}`, 14, 42);
-
-                let yPosition = 60;
-                pdf.setFont('helvetica', 'bold');
-                pdf.text('Data', 14, yPosition);
-                pdf.text('Descrição', 50, yPosition);
-                pdf.text('Valor', 196, yPosition, { align: 'right' });
-                yPosition += 5;
-                pdf.line(14, yPosition, 196, yPosition);
-                yPosition += 8;
-
-                pdf.setFont('helvetica', 'normal');
-                pdf.setFontSize(11);
-                despesasDaCategoria.forEach(despesa => {
-                    pdf.text(despesa.data, 14, yPosition);
-                    const descricaoLines = pdf.splitTextToSize(despesa.descricao, 95);
-                    pdf.text(descricaoLines, 50, yPosition);
-                    
-                    let valorStr = (despesa.valor || 'R$ 0,00').replace(/[^\d,]/g, '').replace(',', '.');
-                    let valor = parseFloat(valorStr);
-                    if (!isNaN(valor)) {
-                        totalCategoria += valor;
-                    }
-                    pdf.text(despesa.valor, 196, yPosition, { align: 'right' });
-
-                    const alturaLinha = descricaoLines.length * 5;
-                    yPosition += Math.max(10, alturaLinha + 4);
-
-                    if (yPosition > 270) {
-                        pdf.addPage();
-                        yPosition = 20;
-                    }
-                });
-
-                yPosition += 5;
-                pdf.line(14, yPosition, 196, yPosition);
-                yPosition += 8;
-                pdf.setFont('helvetica', 'bold');
-                pdf.setFontSize(12);
-                pdf.text('Total:', 160, yPosition, { align: 'right' });
-                pdf.text(`R$ ${totalCategoria.toFixed(2).replace('.', ',')}`, 196, yPosition, { align: 'right' });
-
-                for (const row of despesasDaCategoria) {
-                    pdf.addPage();
-                    const pageHeight = pdf.internal.pageSize.getHeight();
-                    
-                    pdf.setFont('helvetica', 'bold');
-                    pdf.setFontSize(16);
-                    pdf.text(row.descricao, 14, 20);
-
-                    pdf.setFont('helvetica', 'normal');
-                    pdf.setFontSize(12);
-                    pdf.text(`${row.data} | ${row.valor || ''}`, 14, 30);
-                    
-                    try {
-                        const imageData = await carregarImagemComoBase64(row.nota_fiscal_url);
-                        const img = new Image();
-                        img.src = imageData;
-                        
-                        await new Promise(resolve => {
-                            img.onload = () => {
-                                const marginTop = 40;
-                                const availableHeight = pageHeight - marginTop - 10;
-                                const scale = Math.min(190 / img.width, availableHeight / img.height);
-                                const imgWidth = img.width * scale;
-                                const imgHeight = img.height * scale;
-                                const xOffset = (210 - imgWidth) / 2;
-
-                                pdf.addImage(imageData, 'JPEG', xOffset, marginTop, imgWidth, imgHeight);
-                                resolve();
-                            };
-                            img.onerror = () => resolve();
-                        });
-                    } catch (e) {
-                        pdf.setTextColor(255, 0, 0);
-                        pdf.text('Erro ao carregar o comprovante.', 14, 50);
-                    }
-                }
-
-                const pdfBlob = pdf.output('blob');
-                zip.file(`relatorio_${nomeSelecionado}_${categoria}.pdf`, pdfBlob);
-            }
-
-            zip.generateAsync({ type: 'blob' }).then(function(content) {
-                const link = document.createElement('a');
-                link.href = URL.createObjectURL(content);
-                link.download = `relatorios_${nomeSelecionado}.zip`;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-
-                // Retorna o botão ao estado original
-                submitBtnRelatorio.textContent = originalBtnText;
-                submitBtnRelatorio.disabled = false;
-            }).catch((err) => {
-                console.error("Erro ao gerar o ZIP: ", err);
-                alert("Ocorreu um erro ao compactar os relatórios.");
-                // Retorna o botão ao estado original em caso de erro
-                submitBtnRelatorio.textContent = originalBtnText;
-                submitBtnRelatorio.disabled = false;
-            });
+        if (dadosFiltrados.length === 0) {
+            alert('Nenhum dado encontrado para os filtros selecionados.');
+            submitBtnRelatorio.textContent = originalBtnText;
+            submitBtnRelatorio.disabled = false;
+            return;
         }
-    }
 
+        const despesasPorCategoria = dadosFiltrados.reduce((acc, despesa) => {
+            const categoria = despesa.grupo || 'Sem Categoria';
+            if (!acc[categoria]) acc[categoria] = [];
+            acc[categoria].push(despesa);
+            return acc;
+        }, {});
+
+        const zip = new JSZip();
+
+        for (const categoria in despesasPorCategoria) {
+            const pdf = new jsPDF();
+            const despesasDaCategoria = despesasPorCategoria[categoria];
+            let totalCategoria = 0;
+            const pageHeight = pdf.internal.pageSize.getHeight();
+            const bottomMargin = 25, topMargin = 20;
+
+            const checkPageBreak = (y, neededHeight = 10) => (y + neededHeight > pageHeight - bottomMargin) ? (pdf.addPage(), topMargin) : y;
+            
+            pdf.setFont('helvetica', 'bold').setFontSize(18).text(`Relatório de Despesas - ${categoria}`, 105, 20, { align: 'center' });
+            pdf.setFont('helvetica', 'normal').setFontSize(12).text(`Funcionário: ${nomeSelecionado}`, 14, 35);
+            pdf.text(`Período: ${dataInicio ? dataInicio.split('-').reverse().join('/') : 'N/A'} a ${dataFim ? dataFim.split('-').reverse().join('/') : 'N/A'}`, 14, 42);
+
+            let yPosition = 60;
+
+            if (categoria === 'Alimentação') {
+                const despesasPorDia = despesasDaCategoria.reduce((acc, d) => ({...acc, [d.data]: [...(acc[d.data] || []), d]}), {});
+                const datasOrdenadas = Object.keys(despesasPorDia).sort((a, b) => new Date(a.split('/').reverse().join('-')) - new Date(b.split('/').reverse().join('-')));
+                for (const dia of datasOrdenadas) {
+                    let subtotalDia = 0;
+                    yPosition = checkPageBreak(yPosition, 18);
+                    pdf.setFont('helvetica', 'bold').text(`Despesas de ${dia}:`, 14, yPosition); yPosition += 8;
+                    pdf.setFont('helvetica', 'normal');
+                    despesasPorDia[dia].forEach(despesa => {
+                        const descricaoLines = pdf.splitTextToSize(despesa.descricao, 130);
+                        const alturaLinha = Math.max(10, descricaoLines.length * 5 + 4);
+                        yPosition = checkPageBreak(yPosition, alturaLinha);
+                        pdf.text(descricaoLines, 14, yPosition);
+                        let valor = parseFloat((despesa.valor || '0').replace(/[^\d,]/g, '').replace(',', '.'));
+                        if (!isNaN(valor)) subtotalDia += valor;
+                        pdf.text(despesa.valor, 196, yPosition, { align: 'right' });
+                        yPosition += alturaLinha;
+                    });
+                    yPosition = checkPageBreak(yPosition, 15);
+                    pdf.setFont('helvetica', 'bold').text('Subtotal do dia:', 160, yPosition, { align: 'right' });
+                    pdf.text(`R$ ${subtotalDia.toFixed(2).replace('.', ',')}`, 196, yPosition, { align: 'right' });
+                    yPosition += 5; pdf.line(14, yPosition, 196, yPosition); yPosition += 10;
+                    totalCategoria += subtotalDia;
+                }
+            } else {
+                const drawTableHeader = (y) => {
+                    pdf.setFont('helvetica', 'bold').text('Data', 14, y).text('Descrição', 50, y).text('Valor', 196, y, { align: 'right' });
+                    y += 5; pdf.line(14, y, 196, y); return y + 8;
+                };
+                yPosition = drawTableHeader(yPosition);
+                pdf.setFont('helvetica', 'normal');
+                despesasDaCategoria.forEach(despesa => {
+                    const descricaoLines = pdf.splitTextToSize(despesa.descricao, 95);
+                    const alturaLinha = Math.max(10, descricaoLines.length * 5 + 4);
+                    yPosition = checkPageBreak(yPosition, alturaLinha);
+                    if(yPosition === topMargin) yPosition = drawTableHeader(yPosition);
+                    pdf.text(despesa.data, 14, yPosition).text(descricaoLines, 50, yPosition);
+                    let valor = parseFloat((despesa.valor || '0').replace(/[^\d,]/g, '').replace(',', '.'));
+                    if (!isNaN(valor)) totalCategoria += valor;
+                    pdf.text(despesa.valor, 196, yPosition, { align: 'right' });
+                    yPosition += alturaLinha;
+                });
+            }
+            
+            yPosition = checkPageBreak(yPosition, 15) + 5;
+            pdf.setFont('helvetica', 'bold').text('Total do Período:', 160, yPosition, { align: 'right' });
+            pdf.text(`R$ ${totalCategoria.toFixed(2).replace('.', ',')}`, 196, yPosition, { align: 'right' });
+
+            for (const row of despesasDaCategoria) {
+                pdf.addPage();
+                pdf.setFont('helvetica', 'bold').setFontSize(16).text(row.descricao, 14, 20);
+                pdf.setFont('helvetica', 'normal').setFontSize(12).text(`${row.data} | ${row.valor || ''}`, 14, 30);
+                try {
+                    const img = new Image();
+                    img.src = await carregarImagemComoBase64(row.nota_fiscal_url);
+                    const marginTop = 40, availableHeight = pageHeight - marginTop - 10;
+                    const scale = Math.min(190 / img.width, availableHeight / img.height);
+                    pdf.addImage(img.src, 'JPEG', (210 - img.width * scale) / 2, marginTop, img.width * scale, img.height * scale);
+                } catch (e) {
+                    pdf.setTextColor(255, 0, 0).text('Erro ao carregar o comprovante.', 14, 50);
+                }
+            }
+            zip.file(`relatorio_${nomeSelecionado}_${categoria}.pdf`, pdf.output('blob'));
+        }
+
+        zip.generateAsync({ type: 'blob' }).then(content => {
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(content);
+            link.download = `relatorios_${nomeSelecionado}.zip`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }).catch(err => {
+            console.error("Erro ao gerar o ZIP: ", err);
+            alert("Ocorreu um erro ao compactar os relatórios.");
+        }).finally(() => {
+            submitBtnRelatorio.textContent = originalBtnText;
+            submitBtnRelatorio.disabled = false;
+        });
+    }
+    
     function carregarImagemComoBase64(url) {
         return new Promise((resolve, reject) => {
             const img = new Image();
             img.crossOrigin = "Anonymous";
             img.onload = () => {
                 const canvas = document.createElement('canvas');
-                canvas.width = img.width;
-                canvas.height = img.height;
+                canvas.width = img.width; canvas.height = img.height;
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(img, 0, 0);
                 resolve(canvas.toDataURL('image/jpeg'));
             };
             img.onerror = () => reject(new Error('Erro ao carregar imagem: ' + url));
-            img.src = url;
+            img.src = url + '?t=' + new Date().getTime(); 
         });
     }
+
+    init();
 });
