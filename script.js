@@ -23,7 +23,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const DESPESAS_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQCRWa9HQrijm3a3qJyH89vQnpqm2gMTGqBmWi5hUQnvOJjSfhZvGrPDOSDBMR6ksgMHjXXo6p7zdXG/pub?gid=0&single=true&output=csv';
     const USUARIOS_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQCRWa9HQrijm3a3qJyH89vQnpqm2gMTGqBmWi5hUQnvOJjSfhZvGrPDOSDBMR6ksgMHjXXo6p7zdXG/pub?gid=62546932&single=true&output=csv';
     
-    // ATENÇÃO: COLE A URL DO SEU APP SCRIPT AQUI DENTRO DAS ASPAS
     const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbwzlyCPCcREj_bLD5km22ep0xS4g3BnZa7oKYpbRhYsG16OKxtT_VXR_0gejBfhseFzsg/exec';
 
     let despesasData = [];
@@ -59,7 +58,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // FUNÇÃO REUTILIZÁVEL PARA O SELETOR DE USUÁRIO
     // ===============================
     function setupUserSelector(searchInput, dropdown, hiddenInput, imgElement, errorMessage, isRegistroTab = false) {
-        // Popula a lista suspensa com usuários (filtrados ou todos)
         const renderDropdown = (filter = '') => {
             dropdown.innerHTML = '';
             const filteredUsers = listaDeUsuarios.filter(user =>
@@ -80,26 +78,21 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         };
 
-        // Ação ao selecionar um usuário da lista
         const selectUser = (user) => {
             searchInput.value = user.nome;
             hiddenInput.value = user.nome;
             imgElement.src = user.imagem;
             dropdown.classList.add('hidden');
             validateSelection();
-
-            // Apenas o seletor de registro salva e atualiza o limite
             if (isRegistroTab) {
                 localStorage.setItem('ultimoUsuarioSalvo', user.nome);
                 atualizarLimiteAlimentacao();
             }
         };
 
-        // Valida se o nome no campo de busca é um usuário válido
         const validateSelection = () => {
             const nomeAtual = searchInput.value;
             const usuarioValido = listaDeUsuarios.some(u => u.nome === nomeAtual);
-
             if (usuarioValido) {
                 hiddenInput.value = nomeAtual;
                 errorMessage.classList.add('hidden');
@@ -111,7 +104,6 @@ document.addEventListener('DOMContentLoaded', () => {
             return usuarioValido;
         };
 
-        // Event Listeners
         searchInput.addEventListener('focus', () => {
             renderDropdown(searchInput.value);
             dropdown.classList.remove('hidden');
@@ -128,7 +120,6 @@ document.addEventListener('DOMContentLoaded', () => {
         
         return { selectUser, validateSelection };
     }
-
 
     // ===============================
     // FUNÇÕES GERAIS DA APLICAÇÃO
@@ -413,23 +404,52 @@ document.addEventListener('DOMContentLoaded', () => {
             pdf.setFont('helvetica', 'bold').text('Total do Período:', 160, yPosition, { align: 'right' });
             pdf.text(`R$ ${totalCategoria.toFixed(2).replace('.', ',')}`, 196, yPosition, { align: 'right' });
 
-            for (const row of despesasDaCategoria) {
+            // --- OTIMIZAÇÃO E CORREÇÃO APLICADA AQUI ---
+            // 1. Criamos uma lista de "promessas" para buscar todas as imagens em paralelo.
+            submitBtnRelatorio.textContent = `Carregando ${despesasDaCategoria.length} comprovantes...`;
+            const promessasDeImagens = despesasDaCategoria.map(row => {
+                // 2. CORREÇÃO: Usamos o proxy de CORS para evitar o bloqueio do navegador.
+                const urlDaImagemComProxy = `https://corsproxy.io/?${encodeURIComponent(row.nota_fiscal_url)}`;
+                return carregarImagemComoBase64(urlDaImagemComProxy)
+                    // Adicionamos um .catch para que, se UMA imagem falhar, o processo continue.
+                    .catch(err => {
+                        console.error(`Falha ao carregar imagem: ${row.nota_fiscal_url}`, err);
+                        return null; // Retorna nulo em caso de erro.
+                    });
+            });
+
+            // 3. OTIMIZAÇÃO: Esperamos que TODAS as imagens terminem de carregar.
+            const imagensBase64 = await Promise.all(promessasDeImagens);
+            submitBtnRelatorio.textContent = 'Montando PDFs...';
+
+            // 4. Agora, com todas as imagens já carregadas, adicionamos as páginas ao PDF.
+            despesasDaCategoria.forEach((row, index) => {
                 pdf.addPage();
                 pdf.setFont('helvetica', 'bold').setFontSize(16).text(row.descricao, 14, 20);
                 pdf.setFont('helvetica', 'normal').setFontSize(12).text(`${row.data} | ${row.valor || ''}`, 14, 30);
-                try {
-                    const img = new Image();
-                    img.src = await carregarImagemComoBase64(row.nota_fiscal_url);
-                    const marginTop = 40, availableHeight = pageHeight - marginTop - 10;
-                    const scale = Math.min(190 / img.width, availableHeight / img.height);
-                    pdf.addImage(img.src, 'JPEG', (210 - img.width * scale) / 2, marginTop, img.width * scale, img.height * scale);
-                } catch (e) {
-                    pdf.setTextColor(255, 0, 0).text('Erro ao carregar o comprovante.', 14, 50);
+                
+                const imgData = imagensBase64[index]; // Pegamos a imagem já carregada.
+                
+                if (imgData) { // Se a imagem foi carregada com sucesso...
+                    try {
+                        const img = new Image();
+                        img.src = imgData;
+                        const marginTop = 40, availableHeight = pageHeight - marginTop - 10;
+                        const scale = Math.min(190 / img.width, availableHeight / img.height);
+                        pdf.addImage(img.src, 'JPEG', (210 - img.width * scale) / 2, marginTop, img.width * scale, img.height * scale);
+                    } catch (e) {
+                         pdf.setTextColor(255, 0, 0).text('Erro ao renderizar o comprovante no PDF.', 14, 50);
+                    }
+                } else { // Se ocorreu erro ao carregar...
+                    pdf.setTextColor(255, 0, 0).text('Erro ao carregar o comprovante (URL inválida ou offline).', 14, 50);
                 }
-            }
+            });
+            // --- FIM DA OTIMIZAÇÃO E CORREÇÃO ---
+
             zip.file(`relatorio_${nomeSelecionado}_${categoria}.pdf`, pdf.output('blob'));
         }
 
+        submitBtnRelatorio.textContent = 'Compactando arquivos...';
         zip.generateAsync({ type: 'blob' }).then(content => {
             const link = document.createElement('a');
             link.href = URL.createObjectURL(content);
@@ -446,6 +466,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
     
+    // Nenhuma alteração necessária nesta função
     function carregarImagemComoBase64(url) {
         return new Promise((resolve, reject) => {
             const img = new Image();
@@ -457,8 +478,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 ctx.drawImage(img, 0, 0);
                 resolve(canvas.toDataURL('image/jpeg'));
             };
-            img.onerror = () => reject(new Error('Erro ao carregar imagem: ' + url));
-            img.src = url + '?t=' + new Date().getTime(); 
+            img.onerror = (err) => reject(new Error('Erro ao carregar imagem: ' + url + '. Detalhes: ' + err));
+            // Adicionado timestamp para evitar problemas de cache no proxy
+            img.src = url + (url.includes('?') ? '&' : '?') + 't=' + new Date().getTime();
         });
     }
 
