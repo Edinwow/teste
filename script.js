@@ -24,7 +24,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const USUARIOS_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQCRWa9HQrijm3a3qJyH89vQnpqm2gMTGqBmWi5hUQnvOJjSfhZvGrPDOSDBMR6ksgMHjXXo6p7zdXG/pub?gid=62546932&single=true&output=csv';
     
     // ATENÇÃO: COLE A URL DO SEU APP SCRIPT AQUI DENTRO DAS ASPAS
-    const WEBAPP_URL = 'COLE_A_URL_DO_SEU_NOVO_SCRIPT_AQUI';
+    const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbwzlyCPCcREj_bLD5km22ep0xS4g3BnZa7oKYpbRhYsG16OKxtT_VXR_0gejBfhseFzsg/exec';
 
     let despesasData = [];
     let listaDeUsuarios = [];
