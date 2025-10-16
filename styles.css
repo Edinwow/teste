@@ -15,7 +15,7 @@ body {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     background-color: var(--background-color);
     margin: 0;
-    padding: 20px;
+    padding: 0; /* Removido padding para controle total */
     display: flex;
     justify-content: center;
     align-items: center; 
@@ -26,28 +26,36 @@ body {
 .app-container {
     width: 100%;
     max-width: 500px; 
+    height: 100%;
     background-color: var(--container-bg);
     border-radius: 20px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
     padding: 24px;
+    padding-bottom: 80px; /* Espaço para a navegação inferior */
     box-sizing: border-box;
+    position: relative;
+    overflow-y: auto;
 }
 
-/* --- Navegação por Abas --- */
+/* --- Navegação por Abas (Inferior) --- */
 .tab-nav {
     display: flex;
     background-color: #eef0f2;
     border-radius: 10px;
-    padding: 4px;
-    margin-bottom: 24px;
+    padding: 5px;
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    right: 20px;
+    z-index: 10;
 }
 .tab-link {
     flex: 1;
-    padding: 10px;
+    padding: 12px;
     border: none;
     background-color: transparent;
     color: var(--text-light);
-    font-size: 0.95em;
+    font-size: 1em;
     font-weight: 600;
     border-radius: 8px;
     cursor: pointer;
@@ -56,7 +64,7 @@ body {
 .tab-link.active {
     background-color: var(--container-bg);
     color: var(--text-dark);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 .tab-pane {
     display: none;
@@ -64,6 +72,10 @@ body {
 .tab-pane.active {
     display: block;
 }
+.tab-content {
+    padding-bottom: 20px;
+}
+
 
 /* --- Estilos de Formulário --- */
 .form-group {
@@ -118,6 +130,7 @@ select.form-control {
     display: flex;
     align-items: center;
     gap: 12px;
+    flex-grow: 1;
 }
 .user-select-group img {
     width: 40px;
@@ -125,20 +138,6 @@ select.form-control {
     border-radius: 50%;
     object-fit: cover;
 }
-/* NOVO ESTILO: Para o campo de input de usuário */
-.user-select-input {
-    flex: 1; /* Ocupa o espaço disponível */
-    border: none;
-    background-color: transparent;
-    font-size: 1.2em;
-    font-weight: 700;
-    color: var(--text-dark);
-    padding: 5px 0;
-}
-.user-select-input:focus {
-    outline: none;
-}
-
 .user-select-group.report-user {
     margin-bottom: 24px;
 }
@@ -222,118 +221,109 @@ select.form-control {
     cursor: not-allowed;
 }
 
-/* Contêiner principal para o campo de busca e a lista suspensa */
-.user-selector-container {
-    position: relative; /* Necessário para posicionar a lista suspensa */
-    flex: 1;
+/* --- Estilos para o Seletor Pesquisável (Choices.js) --- */
+.choices {
+    width: 100%;
 }
-
-/* A lista suspensa de usuários */
-.user-dropdown-list {
-    position: absolute;
-    top: 100%; /* Posiciona a lista logo abaixo do campo de input */
-    left: 0;
-    right: 0;
-    background-color: var(--container-bg);
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    max-height: 250px; /* Altura máxima para evitar listas muito longas */
-    overflow-y: auto; /* Adiciona scroll se a lista for maior que a altura máxima */
-    z-index: 1000; /* Garante que a lista fique sobre outros elementos */
-    margin-top: 6px;
-}
-
-/* Esconde a lista por padrão */
-.user-dropdown-list.hidden {
-    display: none;
-}
-
-/* Cada item (usuário) na lista */
-.user-dropdown-item {
-    display: flex;
-    align-items: center;
-    padding: 10px 12px;
-    cursor: pointer;
-    transition: background-color 0.2s ease;
-}
-
-/* Efeito ao passar o mouse sobre um item */
-.user-dropdown-item:hover {
-    background-color: var(--input-bg);
-}
-
-/* Imagem do usuário dentro da lista */
-.user-dropdown-item img {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    margin-right: 12px;
-    object-fit: cover;
-}
-
-/* Nome do usuário dentro da lista */
-.user-dropdown-item span {
-    font-size: 0.95em;
-    font-weight: 500;
-    color: var(--text-dark);
-}
-
-/* Mensagem para quando não há resultados na busca */
-.user-dropdown-item.no-results {
-    justify-content: center;
-    color: var(--text-light);
-    cursor: default;
-}
-.user-dropdown-item.no-results:hover {
+.choices__inner {
+    border: none;
     background-color: transparent;
+    padding: 0;
+    font-size: 1.2em;
+    font-weight: 700;
+    color: var(--text-dark);
+    min-height: auto;
+    border-radius: 0;
 }
-
-/* Mensagem de erro para usuário inválido */
-.error-message {
-    font-size: 0.8em;
-    color: var(--danger-color);
-    margin: -12px 0 12px 0; /* Posicionamento abaixo do grupo de usuário */
+.choices[data-type*="select-one"] .choices__inner {
+    padding-bottom: 0;
+}
+.choices__list--single {
+    padding: 0;
+}
+.choices[data-type*="select-one"]:after {
+    content: '';
+    height: 10px;
+    width: 10px;
+    border-style: solid;
+    border-color: var(--text-light);
+    border-width: 0 2px 2px 0;
+    right: 0.5em;
+    top: 50%;
+    transform: translateY(-75%) rotate(45deg);
+    margin-top: 0;
+    border-radius: 1px;
+}
+.choices.is-open:after {
+    margin-top: 0;
+    transform: translateY(-25%) rotate(-135deg);
+}
+.choices__list--dropdown {
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+    margin-top: 8px !important;
+}
+.choices__input {
+    background-color: var(--input-bg);
+    border-radius: 8px;
+    padding: 8px;
+    font-size: 1rem;
+    margin-bottom: 0;
+}
+.choices__item--choice {
+    padding: 10px 12px;
+    font-size: 1rem;
     font-weight: 500;
 }
-.error-message.hidden {
-    display: none;
+.choices__item--choice.is-highlighted {
+    background-color: var(--primary-color);
 }
 
-/* --- Responsividade para telas menores (COM MELHORIAS) --- */
+
+/* --- Responsividade --- */
 @media (max-width: 480px) {
     body {
         padding: 0;
-        align-items: flex-start; /* Em telas pequenas, o container começa do topo */
+        align-items: flex-start;
     }
     .app-container {
         border-radius: 0;
         min-height: 100vh;
         box-shadow: none;
-        padding: 16px; /* Diminui o padding lateral */
+        padding: 16px;
+        padding-bottom: 90px; /* Mais espaço para a nav no celular */
+    }
+    .tab-nav {
+      left: 10px;
+      right: 10px;
+      bottom: 10px;
     }
     .form-grid {
         grid-template-columns: 1fr;
-        gap: 0; /* Remove o gap para um visual mais compacto */
+        gap: 0;
     }
     .user-date-group {
-        flex-direction: column; /* Coloca o nome e a data um em cima do outro */
-        align-items: flex-start; /* Alinha à esquerda */
-        gap: 16px; /* Adiciona espaço vertical */
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px;
     }
-    .user-select-input {
-        font-size: 1.1em; /* Reduz um pouco o tamanho do nome */
+    .user-select-group {
+        width: 100%;
+    }
+    .choices__inner {
+        font-size: 1.1em;
     }
     .file-upload-area {
-        flex-direction: column; /* Empilha o nome do arquivo e os botões */
-        align-items: stretch; /* Estica os itens para preencher a largura */
+        flex-direction: column;
+        align-items: stretch;
         gap: 10px;
     }
     .file-info {
-        text-align: center; /* Centraliza o nome do arquivo */
+        text-align: center;
         padding: 4px 0;
     }
     .button-group {
-        flex-direction: column; /* Botões um em cima do outro */
+        flex-direction: column;
     }
 }

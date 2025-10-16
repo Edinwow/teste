@@ -5,40 +5,34 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Despesas</title>
+  
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css" />
   <link rel="stylesheet" href="styles.css" />
+
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
+  
   <script src="script.js" defer></script>
   <script src="camera.js" defer></script>
+  
   <link rel="icon" href="receipt.svg" type="image/svg+xml" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic" crossorigin>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 
 <body>
   <div class="app-container">
-    <div class="tab-nav">
-      <button class="tab-link active" data-tab="registrar">Registrar</button>
-      <button class="tab-link" data-tab="relatorio">Relatório</button>
-    </div>
-
     <div class="tab-content">
       <div id="registrar" class="tab-pane active">
         <form id="despesa-form">
           <div class="user-date-group">
             <div class="user-select-group">
               <img id="funcionario-img" src="https://i.imgur.com/xsfzmyg.jpeg" alt="Foto" />
-              <div class="user-selector-container">
-                <input type="text" id="user-search-input" class="user-select-input" placeholder="Selecione ou digite..." autocomplete="off">
-                <div id="user-dropdown" class="user-dropdown-list hidden"></div>
-              </div>
+              <select id="nome" name="nome" required></select>
             </div>
-            <input type="hidden" id="nome" name="nome" required>
             <input type="date" id="data" name="data" class="date-input" required />
           </div>
-          <p id="user-error-message" class="error-message hidden">Usuário inválido. Selecione um nome da lista.</p>
 
           <div class="form-grid">
             <div class="form-group">
@@ -50,14 +44,17 @@
               <select id="grupo" name="grupo" class="form-control"></select>
             </div>
           </div>
+
           <div class="form-group">
             <label for="descricao">Descrição</label>
             <input type="text" id="descricao" name="descricao" class="form-control" placeholder="Ex: Almoço" />
           </div>
+
           <div class="form-group">
             <label for="valor">Valor <span id="limite-restante" class="limit-info"></span></label>
             <input type="text" id="valor" name="valor" class="form-control" placeholder="R$ 0,00" />
           </div>
+
           <div class="form-group">
             <label>Nota fiscal</label>
             <div class="file-upload-area">
@@ -71,6 +68,7 @@
             <input type="file" id="nota_fiscal_arquivo" name="nota_fiscal" accept="image/*" style="display:none" />
             <input type="text" id="nota_fiscal_url" name="nota_fiscal_url" style="display:none" />
           </div>
+
           <button type="submit" class="btn btn-primary">Adicionar despesa</button>
         </form>
       </div>
@@ -79,14 +77,8 @@
         <form id="report-form">
             <div class="user-select-group report-user">
               <img id="relatorio-funcionario-img" src="https://i.imgur.com/xsfzmyg.jpeg" alt="Foto" />
-              <div class="user-selector-container">
-                  <input type="text" id="relatorio-user-search-input" class="user-select-input" placeholder="Selecione ou digite..." autocomplete="off">
-                  <div id="relatorio-user-dropdown" class="user-dropdown-list hidden">
-                      </div>
-              </div>
+              <select id="relatorio-nomeSelect"></select>
             </div>
-            <input type="hidden" id="relatorio-nome-hidden">
-            <p id="relatorio-user-error-message" class="error-message hidden">Usuário inválido. Selecione um nome da lista.</p>
             <div class="form-grid">
                 <div class="form-group">
                     <label for="dataInicio">Data inicial</label>
@@ -100,6 +92,11 @@
             <button type="submit" class="btn btn-primary">Baixar relatório</button>
         </form>
       </div>
+    </div>
+
+    <div class="tab-nav">
+      <button class="tab-link active" data-tab="registrar">📝 Registrar</button>
+      <button class="tab-link" data-tab="relatorio">📊 Relatório</button>
     </div>
   </div>
 </body>
