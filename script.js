@@ -71,33 +71,78 @@ document.addEventListener('DOMContentLoaded', () => {
     function popularUsuarios() {
         const ultimoUsuario = localStorage.getItem('ultimoUsuario');
 
-        [selectNome, selectNomeRelatorio].forEach((select, index) => {
+        [
+            { select: selectNome, imgElement: imgFuncionario, choicesInstance: 'choicesNome' },
+            { select: selectNomeRelatorio, imgElement: imgFuncionarioRelatorio, choicesInstance: 'choicesRelatorio' }
+        ].forEach((item) => {
+            const { select, imgElement, choicesInstance } = item;
+
             if (select) {
                 select.innerHTML = ''; // Limpa opções existentes
                 usuarios.forEach(usuario => {
                     const opt = document.createElement('option');
                     opt.value = usuario.nome;
+                    opt.dataset.image = usuario.imagem; // Armazena a imagem como data attribute
                     opt.textContent = usuario.nome;
                     if (usuario.nome === ultimoUsuario) {
                         opt.selected = true;
                     }
                     select.appendChild(opt);
                 });
-                
-                // Destrói instância anterior do Choices.js se existir
-                if (index === 0 && choicesNome) choicesNome.destroy();
-                if (index === 1 && choicesRelatorio) choicesRelatorio.destroy();
 
-                // Inicializa o Choices.js
-                const choicesInstance = new Choices(select, {
+                // Destrói instância anterior do Choices.js se existir
+                if (window[choicesInstance]) window[choicesInstance].destroy();
+
+                // Inicializa o Choices.js com customRenderer
+                const choicesOptions = {
                     searchEnabled: true,
-                    itemSelectText: 'Pressionar para selecionar',
+                    itemSelectText: '', // Removido o texto padrão
                     noResultsText: 'Nenhum resultado encontrado',
                     noChoicesText: 'Sem opções para escolher',
-                });
+                    callbackOnCreateTemplates: function(template) {
+                        return {
+                            // Renderiza o item selecionado (o que aparece no campo principal)
+                            item: (classNames, data) => {
+                                const userImg = data.customProperties && data.customProperties.image ? 
+                                    `<img src="${data.customProperties.image}" alt="${data.label}" />` : '';
+                                return template(`
+                                    <div class="${classNames.item} ${classNames.itemChoice} ${data.isDisabled ? classNames.itemDisabled : classNames.itemSelectable}" data-item data-id="${data.id}" data-value="${data.value}" ${data.active ? 'aria-selected="true"' : ''} ${data.disabled ? 'aria-disabled="true"' : ''}>
+                                        ${userImg}
+                                        <span>${data.label}</span>
+                                    </div>
+                                `);
+                            },
+                            // Renderiza as opções no dropdown
+                            choice: (classNames, data) => {
+                                const userImg = data.customProperties && data.customProperties.image ? 
+                                    `<img src="${data.customProperties.image}" alt="${data.label}" />` : '';
+                                return template(`
+                                    <div class="${classNames.item} ${classNames.itemChoice} ${data.isDisabled ? classNames.itemDisabled : classNames.itemSelectable}" data-select-text="${this.config.itemSelectText}" data-choice ${data.disabled ? 'data-choice-disabled aria-disabled="true"' : 'data-choice-selectable'} data-id="${data.id}" data-value="${data.value}" ${data.groupId ? 'role="treeitem"' : 'role="option"'}>
+                                        ${userImg}
+                                        <span>${data.label}</span>
+                                    </div>
+                                `);
+                            },
+                        };
+                    }
+                };
 
-                if (index === 0) choicesNome = choicesInstance;
-                if (index === 1) choicesRelatorio = choicesInstance;
+                // Adiciona as propriedades customizadas (imagem) para cada opção
+                const choicesData = usuarios.map(usuario => ({
+                    value: usuario.nome,
+                    label: usuario.nome,
+                    customProperties: { image: usuario.imagem }
+                }));
+
+                const choicesInstance = new Choices(select, choicesOptions);
+                choicesInstance.setChoices(choicesData, 'value', 'label', true); // Passa os dados para o Choices.js
+
+                window[choicesInstance] = choicesInstance; // Atribui à variável global
+
+                // Define o valor selecionado após carregar
+                if (ultimoUsuario) {
+                    choicesInstance.setChoiceByValue(ultimoUsuario);
+                }
             }
         });
 
@@ -119,12 +164,16 @@ document.addEventListener('DOMContentLoaded', () => {
         const usuarioSelecionado = usuarios.find(u => u.nome === nome);
         if (usuarioSelecionado && imgFuncionario) {
             imgFuncionario.src = usuarioSelecionado.imagem;
+        } else {
+            imgFuncionario.src = 'https://i.imgur.com/xsfzmyg.jpeg'; // Imagem padrão
         }
     }
     function atualizarImagemUsuarioRelatorio(nome) {
         const usuario = usuarios.find(u => u.nome === nome);
         if (usuario && imgFuncionarioRelatorio) {
             imgFuncionarioRelatorio.src = usuario.imagem;
+        } else {
+            imgFuncionarioRelatorio.src = 'https://i.imgur.com/xsfzmyg.jpeg'; // Imagem padrão
         }
     }
 
@@ -155,6 +204,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (input.files.length > 0) {
             nomeArquivoSpan.textContent = input.files[0].name;
             nomeArquivoSpan.classList.add('selected');
+        } else {
+            nomeArquivoSpan.textContent = 'Nenhum arquivo selecionado';
+            nomeArquivoSpan.classList.remove('selected');
         }
     }
 
@@ -251,7 +303,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 formRegistro.reset();
                 
                 // Reseta os selects para os valores padrão
-                choicesNome.setChoiceByValue(usuarioSelecionado);
+                // choicesNome.setChoiceByValue(usuarioSelecionado); // Isso já é feito na inicialização
                 popularSelectsSimples(selectForma, formasDePagamento);
                 popularSelectsSimples(selectGrupo, categorias);
                 selectGrupo.value = 'Alimentação';
@@ -337,19 +389,25 @@ document.addEventListener('DOMContentLoaded', () => {
         atualizarLimiteAlimentacao(); // Calcula o limite inicial
 
         // Listeners para a aba de Registro
-        selectNome?.addEventListener('change', (e) => {
-            const nome = e.target.value;
-            localStorage.setItem('ultimoUsuario', nome);
-            atualizarImagemUsuario(nome);
-            atualizarLimiteAlimentacao();
-        });
+        // O evento 'change' no select original não dispara após Choices.js,
+        // então usamos o evento 'change' da instância Choices.js
+        if (choicesNome) {
+            choicesNome.passedElement.element.addEventListener('change', (e) => {
+                const nome = e.detail.value;
+                localStorage.setItem('ultimoUsuario', nome);
+                atualizarImagemUsuario(nome);
+                atualizarLimiteAlimentacao();
+            });
+        }
         inputData?.addEventListener('change', atualizarLimiteAlimentacao);
         selectGrupo?.addEventListener('change', atualizarLimiteAlimentacao);
         
         // Listeners para a aba de Relatório
-        selectNomeRelatorio?.addEventListener('change', (e) => {
-            atualizarImagemUsuarioRelatorio(e.target.value)
-        });
+        if (choicesRelatorio) {
+            choicesRelatorio.passedElement.element.addEventListener('change', (e) => {
+                atualizarImagemUsuarioRelatorio(e.detail.value);
+            });
+        }
 
         inputCamera?.addEventListener('change', () => atualizarNomeArquivo(inputCamera));
         inputArquivo?.addEventListener('change', () => atualizarNomeArquivo(inputArquivo));
