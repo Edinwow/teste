@@ -1,76 +1,60 @@
 document.addEventListener('DOMContentLoaded', () => {
     // ===============================
-    // LÓGICA DE NAVEGAÇÃO POR ABAS
+    // DADOS E CONFIGURAÇÕES DA APLICAÇÃO
     // ===============================
-    const tabLinks = document.querySelectorAll('.tab-link');
-    const tabPanes = document.querySelectorAll('.tab-pane');
-
-    tabLinks.forEach(link => {
-        link.addEventListener('click', () => {
-            const tabId = link.getAttribute('data-tab');
-            tabLinks.forEach(item => item.classList.remove('active'));
-            tabPanes.forEach(item => item.classList.remove('active'));
-            link.classList.add('active');
-            document.getElementById(tabId).classList.add('active');
-        });
-    });
-
-    // ===============================
-    // DADOS DA APLICAÇÃO
-    // ===============================
-    const formasDePagamento = ['Cartão de crédito', 'Dinheiro'];
-    const categorias = ['Alimentação', 'Deslocamento', 'Outros'];
-    const DESPESAS_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQCRWa9HQrijm3a3qJyH89vQnpqm2gMTGqBmWi5hUQnvOJjSfhZvGrPDOSDBMR6ksgMHjXXo6p7zdXG/pub?gid=0&single=true&output=csv';
+    const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbwzlyCPCcREj_bLD5km22ep0xS4g3BnZa7oKYpbRhYsG16OKxtT_VXR_0gejBfhseFzsg/exec';
     const USUARIOS_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQCRWa9HQrijm3a3qJyH89vQnpqm2gMTGqBmWi5hUQnvOJjSfhZvGrPDOSDBMR6ksgMHjXXo6p7zdXG/pub?gid=62546932&single=true&output=csv';
-    
-    // ATENÇÃO: COLE A URL DO SEU APP SCRIPT AQUI DENTRO DAS ASPAS
-    const WEBAPP_URL = 'COLE_A_URL_DO_SEU_NOVO_SCRIPT_AQUI';
-
-    let despesasData = [];
+    const PAPAPARSE_URL = 'https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js';
     let listaDeUsuarios = [];
 
     // ===============================
-    // SELETORES GLOBAIS DE ELEMENTOS
+    // SELETORES GLOBAIS
     // ===============================
     const formRegistro = document.getElementById('despesa-form');
     const formRelatorio = document.getElementById('report-form');
-
-    // Elementos do seletor de REGISTRO
+    // ... seletores para os campos de formulário ...
     const userSearchInput = document.getElementById('user-search-input');
     const userDropdown = document.getElementById('user-dropdown');
     const hiddenNomeInput = document.getElementById('nome');
     const userErrorMessage = document.getElementById('user-error-message');
     const imgFuncionario = document.getElementById('funcionario-img');
-
-    // Elementos do seletor de RELATÓRIO
     const reportUserSearchInput = document.getElementById('relatorio-user-search-input');
     const reportUserDropdown = document.getElementById('relatorio-user-dropdown');
     const reportHiddenNomeInput = document.getElementById('relatorio-nome-hidden');
     const reportUserErrorMessage = document.getElementById('relatorio-user-error-message');
     const reportImgFuncionario = document.getElementById('relatorio-funcionario-img');
-
-    // Outros elementos
-    const selectForma = document.getElementById('forma_pagamento');
-    const selectGrupo = document.getElementById('grupo');
-    const inputValor = document.getElementById('valor');
     const inputData = document.getElementById('data');
+    const selectGrupo = document.getElementById('grupo');
 
     // ===============================
-    // FUNÇÃO REUTILIZÁVEL PARA O SELETOR DE USUÁRIO
+    // OTIMIZAÇÃO: CARREGADOR DE SCRIPTS DINÂMICO
+    // ===============================
+    const loadedScripts = {};
+    function loadScript(url) {
+        if (loadedScripts[url]) return Promise.resolve();
+        return new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = url;
+            script.onload = () => {
+                loadedScripts[url] = true;
+                resolve();
+            };
+            script.onerror = reject;
+            document.head.appendChild(script);
+        });
+    }
+
+    // ===============================
+    // LÓGICA DO SELETOR DE USUÁRIO (REUTILIZÁVEL)
     // ===============================
     function setupUserSelector(searchInput, dropdown, hiddenInput, imgElement, errorMessage, isRegistroTab = false) {
-        // Popula a lista suspensa com usuários (filtrados ou todos)
         const renderDropdown = (filter = '') => {
             dropdown.innerHTML = '';
-            const filteredUsers = listaDeUsuarios.filter(user =>
-                user.nome.toLowerCase().includes(filter.toLowerCase())
-            );
-
+            const filteredUsers = listaDeUsuarios.filter(u => u.nome.toLowerCase().includes(filter.toLowerCase()));
             if (filteredUsers.length === 0) {
                 dropdown.innerHTML = '<div class="user-dropdown-item no-results">Nenhum resultado</div>';
                 return;
             }
-
             filteredUsers.forEach(user => {
                 const item = document.createElement('div');
                 item.className = 'user-dropdown-item';
@@ -79,62 +63,38 @@ document.addEventListener('DOMContentLoaded', () => {
                 dropdown.appendChild(item);
             });
         };
-
-        // Ação ao selecionar um usuário da lista
         const selectUser = (user) => {
             searchInput.value = user.nome;
             hiddenInput.value = user.nome;
             imgElement.src = user.imagem;
             dropdown.classList.add('hidden');
             validateSelection();
-
-            // Apenas o seletor de registro salva e atualiza o limite
             if (isRegistroTab) {
                 localStorage.setItem('ultimoUsuarioSalvo', user.nome);
                 atualizarLimiteAlimentacao();
             }
         };
-
-        // Valida se o nome no campo de busca é um usuário válido
         const validateSelection = () => {
             const nomeAtual = searchInput.value;
             const usuarioValido = listaDeUsuarios.some(u => u.nome === nomeAtual);
-
-            if (usuarioValido) {
-                hiddenInput.value = nomeAtual;
-                errorMessage.classList.add('hidden');
-            } else {
-                hiddenInput.value = '';
-                if(nomeAtual !== '') errorMessage.classList.remove('hidden');
-                else errorMessage.classList.add('hidden');
-            }
+            hiddenInput.value = usuarioValido ? nomeAtual : '';
+            errorMessage.classList.toggle('hidden', usuarioValido || nomeAtual === '');
             return usuarioValido;
         };
-
-        // Event Listeners
-        searchInput.addEventListener('focus', () => {
-            renderDropdown(searchInput.value);
-            dropdown.classList.remove('hidden');
-        });
-        searchInput.addEventListener('input', () => {
-            renderDropdown(searchInput.value);
-            validateSelection();
-        });
+        searchInput.addEventListener('focus', () => { renderDropdown(searchInput.value); dropdown.classList.remove('hidden'); });
+        searchInput.addEventListener('input', () => { renderDropdown(searchInput.value); validateSelection(); });
         document.addEventListener('click', (e) => {
-            if (!e.target.closest('.user-selector-container')) {
-                 dropdown.classList.add('hidden');
-            }
+            if (!e.target.closest('.user-selector-container')) dropdown.classList.add('hidden');
         });
-        
-        return { selectUser, validateSelection };
+        return { selectUser };
     }
 
-
     // ===============================
-    // FUNÇÕES GERAIS DA APLICAÇÃO
+    // FUNÇÕES DA APLICAÇÃO
     // ===============================
     async function carregarUsuarios() {
         try {
+            await loadScript(PAPAPARSE_URL);
             const resp = await fetch(`${USUARIOS_CSV_URL}&t=${new Date().getTime()}`);
             const csvText = await resp.text();
             listaDeUsuarios = Papa.parse(csvText, { header: true, skipEmptyLines: true }).data.filter(u => u.nome && u.imagem);
@@ -150,45 +110,123 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
-    function atualizarLimiteAlimentacao() {
+    // OTIMIZAÇÃO: Busca a soma diária diretamente do servidor
+    async function atualizarLimiteAlimentacao() {
         const spanLimite = document.getElementById('limite-restante');
-        if (!spanLimite) return;
         const nomeSelecionado = hiddenNomeInput.value;
-        const dataSelecionada = inputData?.value;
-        const despesaSelecionada = selectGrupo?.value;
-        if (despesaSelecionada !== 'Alimentação' || !nomeSelecionado) {
+        const [ano, mes, dia] = inputData.value.split('-');
+        const dataFormatada = `${dia}/${mes}/${ano}`;
+
+        if (selectGrupo.value !== 'Alimentação' || !nomeSelecionado) {
             spanLimite.textContent = '';
             return;
         }
-        let somaDoDia = 0;
-        despesasData.forEach(row => {
-            if (!row.data || !row.nome || !row.grupo) return;
-            const partes = row.data.trim().split('/');
-            if (partes.length !== 3) return;
-            const dataDaLinhaFormatada = `${partes[2]}-${partes[1].padStart(2, '0')}-${partes[0].padStart(2, '0')}`;
-            if (row.nome.trim() === nomeSelecionado && dataDaLinhaFormatada === dataSelecionada && row.grupo.trim() === 'Alimentação') {
-                let valor = parseFloat((row.valor || '0').replace(/[^\d,]/g, '').replace(',', '.'));
-                if (!isNaN(valor)) somaDoDia += valor;
+
+        try {
+            const url = new URL(WEBAPP_URL);
+            url.searchParams.append('action', 'getDailySum');
+            url.searchParams.append('nome', nomeSelecionado);
+            url.searchParams.append('data', dataFormatada);
+            
+            const response = await fetch(url);
+            const data = await response.json();
+            const somaDoDia = data.sum || 0;
+            const restante = 170 - somaDoDia;
+            
+            spanLimite.textContent = `Resta R$ ${restante.toFixed(2).replace('.', ',')}`;
+            spanLimite.classList.toggle('warning', restante <= 50 && restante > 0);
+            spanLimite.classList.toggle('danger', restante <= 0);
+        } catch (error) {
+            console.error('Erro ao buscar limite diário:', error);
+            spanLimite.textContent = 'Erro ao consultar';
+        }
+    }
+
+    // OTIMIZAÇÃO: Lógica de relatório movida para o servidor
+    async function generateReportFromServer() {
+        if (reportHiddenNomeInput.value === '') {
+            alert("Por favor, selecione um usuário válido da lista.");
+            return;
+        }
+
+        const submitBtnRelatorio = formRelatorio.querySelector('button[type="submit"]');
+        submitBtnRelatorio.disabled = true;
+        submitBtnRelatorio.textContent = 'Gerando na nuvem...';
+
+        try {
+            const url = new URL(WEBAPP_URL);
+            url.searchParams.append('action', 'generateReport');
+            url.searchParams.append('nome', reportHiddenNomeInput.value);
+            url.searchParams.append('dataInicio', document.getElementById('dataInicio').value);
+            url.searchParams.append('dataFim', document.getElementById('dataFim').value);
+
+            const response = await fetch(url);
+            const result = await response.json();
+
+            if (result.status === 'success') {
+                const byteCharacters = atob(result.file);
+                const byteNumbers = new Array(byteCharacters.length);
+                for (let i = 0; i < byteCharacters.length; i++) {
+                    byteNumbers[i] = byteCharacters.charCodeAt(i);
+                }
+                const byteArray = new Uint8Array(byteNumbers);
+                const blob = new Blob([byteArray], { type: 'application/zip' });
+
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = result.filename;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            } else if (result.status === 'nodata') {
+                alert('Nenhum dado encontrado para os filtros selecionados.');
+            } else {
+                throw new Error(result.message || 'Erro desconhecido no servidor.');
             }
-        });
-        const restante = 170 - somaDoDia;
-        spanLimite.textContent = `Resta R$ ${restante.toFixed(2).replace('.', ',')}`;
-        spanLimite.classList.toggle('warning', restante <= 50 && restante > 0);
-        spanLimite.classList.toggle('danger', restante <= 0);
+        } catch (error) {
+            console.error("Erro ao gerar relatório:", error);
+            alert(`Falha ao gerar o relatório: ${error.message}`);
+        } finally {
+            submitBtnRelatorio.disabled = false;
+            submitBtnRelatorio.textContent = 'Baixar relatório';
+        }
     }
     
     // ===============================
-    // LÓGICA DOS FORMULÁRIOS
+    // INICIALIZAÇÃO E EVENTOS
     // ===============================
-    if (formRegistro) {
-        formRegistro.addEventListener('submit', async function(e) {
+    async function init() {
+        // Navegação por abas
+        document.querySelectorAll('.tab-link').forEach(link => {
+            link.addEventListener('click', () => {
+                document.querySelectorAll('.tab-link, .tab-pane').forEach(item => item.classList.remove('active'));
+                link.classList.add('active');
+                document.getElementById(link.getAttribute('data-tab')).classList.add('active');
+            });
+        });
+
+        await carregarUsuarios();
+        
+        const registroSelector = setupUserSelector(userSearchInput, userDropdown, hiddenNomeInput, imgFuncionario, userErrorMessage, true);
+        const relatorioSelector = setupUserSelector(reportUserSearchInput, reportUserDropdown, reportHiddenNomeInput, reportImgFuncionario, reportUserErrorMessage);
+
+        carregarUltimoUsuario(registroSelector, relatorioSelector);
+
+        // Configuração geral dos formulários
+        const dataInput = document.getElementById('data');
+        if (dataInput) {
+            const formatter = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo' });
+            dataInput.value = formatter.format(new Date());
+            dataInput.addEventListener('change', atualizarLimiteAlimentacao);
+        }
+        selectGrupo?.addEventListener('change', atualizarLimiteAlimentacao);
+        formRelatorio?.addEventListener('submit', (e) => { e.preventDefault(); generateReportFromServer(); });
+
+        // A lógica de envio do registro não precisa de grandes mudanças
+        formRegistro?.addEventListener('submit', async (e) => {
             e.preventDefault();
             const submitBtn = formRegistro.querySelector('button[type="submit"]');
-            
-            if (hiddenNomeInput.value === '') {
-                alert("Por favor, selecione um usuário válido da lista.");
-                return;
-            }
+            if(hiddenNomeInput.value === '') { alert("Selecione um usuário válido."); return; }
             
             submitBtn.disabled = true;
             submitBtn.textContent = 'Enviando...';
@@ -196,23 +234,19 @@ document.addEventListener('DOMContentLoaded', () => {
             const formData = new FormData(formRegistro);
             const [ano, mes, dia] = formData.get('data').split('-');
             formData.set('data', `${dia}/${mes}/${ano}`);
+
             try {
                 const response = await fetch(WEBAPP_URL, { method: 'POST', body: formData });
                 const result = await response.json();
-                if (result.status === 'success') {
-                    alert('Despesa registrada com sucesso!');
-                    despesasData.push(Object.fromEntries(formData));
-                    const usuarioSelecionado = listaDeUsuarios.find(u => u.nome === hiddenNomeInput.value);
-                    formRegistro.reset();
-                    if (usuarioSelecionado) {
-                       setupUserSelector(userSearchInput, userDropdown, hiddenNomeInput, imgFuncionario, userErrorMessage, true).selectUser(usuarioSelecionado);
-                    }
-                    configurarDataAtual();
-                    document.getElementById('nome-arquivo').textContent = 'Nenhum arquivo selecionado';
-                    document.getElementById('nome-arquivo').classList.remove('selected');
-                    popularCategorias();
-                    atualizarLimiteAlimentacao();
-                } else { throw new Error(result.message || 'Ocorreu um erro no servidor.'); }
+                if (result.status !== 'success') throw new Error(result.message);
+                
+                alert('Despesa registrada com sucesso!');
+                const usuarioSalvo = listaDeUsuarios.find(u => u.nome === hiddenNomeInput.value);
+                formRegistro.reset();
+                if(usuarioSalvo) registroSelector.selectUser(usuarioSalvo);
+                dataInput.value = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo' }).format(new Date());
+                document.getElementById('nome-arquivo').textContent = 'Nenhum arquivo selecionado';
+                atualizarLimiteAlimentacao();
             } catch (error) {
                 console.error("Erro ao registrar despesa:", error);
                 alert(`Falha ao registrar a despesa: ${error.message}`);
@@ -220,245 +254,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 submitBtn.disabled = false;
                 submitBtn.textContent = 'Adicionar Despesa';
             }
-        });
-    }
-
-    if(formRelatorio) {
-        formRelatorio.addEventListener('submit', (e) => {
-            e.preventDefault();
-            if (reportHiddenNomeInput.value === '') {
-                alert("Por favor, selecione um usuário válido da lista para gerar o relatório.");
-                return;
-            }
-            gerarRelatoriosPorCategoria(reportHiddenNomeInput.value);
-        });
-    }
-
-    // ===============================
-    // INICIALIZAÇÃO DA APLICAÇÃO
-    // ===============================
-    async function init() {
-        await carregarUsuarios();
-        
-        const registroSelector = setupUserSelector(userSearchInput, userDropdown, hiddenNomeInput, imgFuncionario, userErrorMessage, true);
-        const relatorioSelector = setupUserSelector(reportUserSearchInput, reportUserDropdown, reportHiddenNomeInput, reportImgFuncionario, reportUserErrorMessage);
-
-        popularFormasPagamento();
-        popularCategorias();
-        configurarCampoValor();
-        configurarDataAtual();
-        
-        carregarUltimoUsuario(registroSelector, relatorioSelector);
-        
-        await carregarDadosDespesas();
-        atualizarLimiteAlimentacao();
-    }
-    
-    // ===============================
-    // FUNÇÕES AUXILIARES E RESTANTES
-    // ===============================
-    function popularFormasPagamento() {
-        if (selectForma) {
-            selectForma.innerHTML = '';
-            formasDePagamento.forEach(forma => {
-                selectForma.appendChild(new Option(forma, forma));
-            });
-        }
-    }
-
-    function popularCategorias() {
-        if (selectGrupo) {
-            selectGrupo.innerHTML = '';
-            categorias.forEach(cat => {
-                selectGrupo.appendChild(new Option(cat, cat));
-            });
-            selectGrupo.value = 'Alimentação';
-        }
-    }
-
-    function configurarCampoValor() {
-        if (inputValor) {
-            inputValor.addEventListener('input', (e) => {
-                let valor = e.target.value.replace(/\D/g, '');
-                valor = (valor / 100).toFixed(2).replace('.', ',');
-                valor = valor.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-                e.target.value = 'R$ ' + valor;
-            });
-        }
-    }
-
-    function configurarDataAtual() {
-        if (inputData) {
-            const formatter = new Intl.DateTimeFormat('en-CA', {
-                timeZone: 'America/Sao_Paulo',
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit'
-            });
-            inputData.value = formatter.format(new Date());
-        }
-    }
-
-    async function carregarDadosDespesas() {
-        try {
-            const resp = await fetch(`${DESPESAS_CSV_URL}&t=${new Date().getTime()}`);
-            const csvText = await resp.text();
-            despesasData = Papa.parse(csvText, {
-                header: true,
-                skipEmptyLines: true,
-                transformHeader: header => header.trim()
-            }).data;
-        } catch (error) {
-            console.error("Não foi possível carregar os dados de despesas.", error);
-            alert("Não foi possível conectar à planilha de despesas. A verificação de limite pode não funcionar.");
-        }
-    }
-
-    async function gerarRelatoriosPorCategoria(nomeSelecionado) {
-        const submitBtnRelatorio = formRelatorio.querySelector('button[type="submit"]');
-        const originalBtnText = submitBtnRelatorio.textContent;
-        submitBtnRelatorio.textContent = 'Gerando relatórios...';
-        submitBtnRelatorio.disabled = true;
-
-        const { jsPDF } = window.jspdf;
-        const dataInicio = document.getElementById('dataInicio').value;
-        const dataFim = document.getElementById('dataFim').value;
-
-        const dadosFiltrados = despesasData.filter(row => {
-            if (!row.data || !row.descricao || !row.nota_fiscal_url || !row.nome) return false;
-            const partes = row.data.split('/');
-            if (partes.length !== 3) return false;
-            const dataRow = `${partes[2]}-${partes[1].padStart(2, '0')}-${partes[0].padStart(2, '0')}`;
-            const dentroDoIntervalo = (!dataInicio || dataRow >= dataInicio) && (!dataFim || dataRow <= dataFim);
-            const nomeConfere = row.nome.trim() === nomeSelecionado;
-            return dentroDoIntervalo && nomeConfere;
-        });
-
-        if (dadosFiltrados.length === 0) {
-            alert('Nenhum dado encontrado para os filtros selecionados.');
-            submitBtnRelatorio.textContent = originalBtnText;
-            submitBtnRelatorio.disabled = false;
-            return;
-        }
-
-        const despesasPorCategoria = dadosFiltrados.reduce((acc, despesa) => {
-            const categoria = despesa.grupo || 'Sem Categoria';
-            if (!acc[categoria]) acc[categoria] = [];
-            acc[categoria].push(despesa);
-            return acc;
-        }, {});
-
-        const zip = new JSZip();
-
-        for (const categoria in despesasPorCategoria) {
-            const pdf = new jsPDF();
-            const despesasDaCategoria = despesasPorCategoria[categoria];
-            let totalCategoria = 0;
-            const pageHeight = pdf.internal.pageSize.getHeight();
-            const bottomMargin = 25, topMargin = 20;
-
-            const checkPageBreak = (y, neededHeight = 10) => (y + neededHeight > pageHeight - bottomMargin) ? (pdf.addPage(), topMargin) : y;
-            
-            pdf.setFont('helvetica', 'bold').setFontSize(18).text(`Relatório de Despesas - ${categoria}`, 105, 20, { align: 'center' });
-            pdf.setFont('helvetica', 'normal').setFontSize(12).text(`Funcionário: ${nomeSelecionado}`, 14, 35);
-            pdf.text(`Período: ${dataInicio ? dataInicio.split('-').reverse().join('/') : 'N/A'} a ${dataFim ? dataFim.split('-').reverse().join('/') : 'N/A'}`, 14, 42);
-
-            let yPosition = 60;
-
-            if (categoria === 'Alimentação') {
-                const despesasPorDia = despesasDaCategoria.reduce((acc, d) => ({...acc, [d.data]: [...(acc[d.data] || []), d]}), {});
-                const datasOrdenadas = Object.keys(despesasPorDia).sort((a, b) => new Date(a.split('/').reverse().join('-')) - new Date(b.split('/').reverse().join('-')));
-                for (const dia of datasOrdenadas) {
-                    let subtotalDia = 0;
-                    yPosition = checkPageBreak(yPosition, 18);
-                    pdf.setFont('helvetica', 'bold').text(`Despesas de ${dia}:`, 14, yPosition); yPosition += 8;
-                    pdf.setFont('helvetica', 'normal');
-                    despesasPorDia[dia].forEach(despesa => {
-                        const descricaoLines = pdf.splitTextToSize(despesa.descricao, 130);
-                        const alturaLinha = Math.max(10, descricaoLines.length * 5 + 4);
-                        yPosition = checkPageBreak(yPosition, alturaLinha);
-                        pdf.text(descricaoLines, 14, yPosition);
-                        let valor = parseFloat((despesa.valor || '0').replace(/[^\d,]/g, '').replace(',', '.'));
-                        if (!isNaN(valor)) subtotalDia += valor;
-                        pdf.text(despesa.valor, 196, yPosition, { align: 'right' });
-                        yPosition += alturaLinha;
-                    });
-                    yPosition = checkPageBreak(yPosition, 15);
-                    pdf.setFont('helvetica', 'bold').text('Subtotal do dia:', 160, yPosition, { align: 'right' });
-                    pdf.text(`R$ ${subtotalDia.toFixed(2).replace('.', ',')}`, 196, yPosition, { align: 'right' });
-                    yPosition += 5; pdf.line(14, yPosition, 196, yPosition); yPosition += 10;
-                    totalCategoria += subtotalDia;
-                }
-            } else {
-                const drawTableHeader = (y) => {
-                    pdf.setFont('helvetica', 'bold').text('Data', 14, y).text('Descrição', 50, y).text('Valor', 196, y, { align: 'right' });
-                    y += 5; pdf.line(14, y, 196, y); return y + 8;
-                };
-                yPosition = drawTableHeader(yPosition);
-                pdf.setFont('helvetica', 'normal');
-                despesasDaCategoria.forEach(despesa => {
-                    const descricaoLines = pdf.splitTextToSize(despesa.descricao, 95);
-                    const alturaLinha = Math.max(10, descricaoLines.length * 5 + 4);
-                    yPosition = checkPageBreak(yPosition, alturaLinha);
-                    if(yPosition === topMargin) yPosition = drawTableHeader(yPosition);
-                    pdf.text(despesa.data, 14, yPosition).text(descricaoLines, 50, yPosition);
-                    let valor = parseFloat((despesa.valor || '0').replace(/[^\d,]/g, '').replace(',', '.'));
-                    if (!isNaN(valor)) totalCategoria += valor;
-                    pdf.text(despesa.valor, 196, yPosition, { align: 'right' });
-                    yPosition += alturaLinha;
-                });
-            }
-            
-            yPosition = checkPageBreak(yPosition, 15) + 5;
-            pdf.setFont('helvetica', 'bold').text('Total do Período:', 160, yPosition, { align: 'right' });
-            pdf.text(`R$ ${totalCategoria.toFixed(2).replace('.', ',')}`, 196, yPosition, { align: 'right' });
-
-            for (const row of despesasDaCategoria) {
-                pdf.addPage();
-                pdf.setFont('helvetica', 'bold').setFontSize(16).text(row.descricao, 14, 20);
-                pdf.setFont('helvetica', 'normal').setFontSize(12).text(`${row.data} | ${row.valor || ''}`, 14, 30);
-                try {
-                    const img = new Image();
-                    img.src = await carregarImagemComoBase64(row.nota_fiscal_url);
-                    const marginTop = 40, availableHeight = pageHeight - marginTop - 10;
-                    const scale = Math.min(190 / img.width, availableHeight / img.height);
-                    pdf.addImage(img.src, 'JPEG', (210 - img.width * scale) / 2, marginTop, img.width * scale, img.height * scale);
-                } catch (e) {
-                    pdf.setTextColor(255, 0, 0).text('Erro ao carregar o comprovante.', 14, 50);
-                }
-            }
-            zip.file(`relatorio_${nomeSelecionado}_${categoria}.pdf`, pdf.output('blob'));
-        }
-
-        zip.generateAsync({ type: 'blob' }).then(content => {
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(content);
-            link.download = `relatorios_${nomeSelecionado}.zip`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        }).catch(err => {
-            console.error("Erro ao gerar o ZIP: ", err);
-            alert("Ocorreu um erro ao compactar os relatórios.");
-        }).finally(() => {
-            submitBtnRelatorio.textContent = originalBtnText;
-            submitBtnRelatorio.disabled = false;
-        });
-    }
-    
-    function carregarImagemComoBase64(url) {
-        return new Promise((resolve, reject) => {
-            const img = new Image();
-            img.crossOrigin = "Anonymous";
-            img.onload = () => {
-                const canvas = document.createElement('canvas');
-                canvas.width = img.width; canvas.height = img.height;
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0);
-                resolve(canvas.toDataURL('image/jpeg'));
-            };
-            img.onerror = () => reject(new Error('Erro ao carregar imagem: ' + url));
-            img.src = url + '?t=' + new Date().getTime(); 
         });
     }
 
