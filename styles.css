@@ -15,72 +15,73 @@ body {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     background-color: var(--background-color);
     margin: 0;
-    padding: 0; /* Removido padding para controle total */
+    padding: 20px;
     display: flex;
     justify-content: center;
-    align-items: center; 
+    align-items: center;
     min-height: 100vh;
     color: var(--text-dark);
 }
 
 .app-container {
     width: 100%;
-    max-width: 500px; 
-    height: 100%;
+    max-width: 500px;
     background-color: var(--container-bg);
     border-radius: 20px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
     padding: 24px;
-    padding-bottom: 80px; /* Espaço para a navegação inferior */
     box-sizing: border-box;
-    position: relative;
-    overflow-y: auto;
+    display: flex;
+    flex-direction: column; /* Organiza conteúdo e abas verticalmente */
 }
 
-/* --- Navegação por Abas (Inferior) --- */
+.tab-content {
+    flex-grow: 1; /* Faz o conteúdo ocupar o espaço disponível */
+    order: 1; /* Conteúdo vem primeiro */
+}
+
+/* --- Navegação por Abas (abaixo) --- */
 .tab-nav {
     display: flex;
     background-color: #eef0f2;
     border-radius: 10px;
-    padding: 5px;
-    position: absolute;
-    bottom: 20px;
-    left: 20px;
-    right: 20px;
-    z-index: 10;
+    padding: 4px;
+    margin-top: 24px; /* Espaço entre o formulário e as abas */
+    order: 2; /* Abas vêm depois */
 }
+
 .tab-link {
     flex: 1;
-    padding: 12px;
+    padding: 10px;
     border: none;
     background-color: transparent;
     color: var(--text-light);
-    font-size: 1em;
+    font-size: 0.95em;
     font-weight: 600;
     border-radius: 8px;
     cursor: pointer;
     transition: background-color 0.3s ease, color 0.3s ease;
 }
+
 .tab-link.active {
     background-color: var(--container-bg);
     color: var(--text-dark);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
+
 .tab-pane {
     display: none;
 }
+
 .tab-pane.active {
     display: block;
 }
-.tab-content {
-    padding-bottom: 20px;
-}
-
 
 /* --- Estilos de Formulário --- */
 .form-group {
     margin-bottom: 20px;
 }
+
 .form-group label {
     display: block;
     margin-bottom: 8px;
@@ -88,6 +89,7 @@ body {
     font-size: 0.9em;
     color: var(--text-dark);
 }
+
 .form-control {
     width: 100%;
     padding: 12px 0;
@@ -99,10 +101,12 @@ body {
     box-sizing: border-box;
     transition: border-color 0.2s ease;
 }
+
 .form-control:focus {
     outline: none;
     border-color: var(--primary-color);
 }
+
 select.form-control {
     appearance: none;
     -webkit-appearance: none;
@@ -119,26 +123,15 @@ select.form-control {
     gap: 20px;
 }
 
-/* --- Componentes Específicos (COM AJUSTES) --- */
+/* --- Componentes Específicos --- */
 .user-date-group {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 24px;
 }
-.user-select-group {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    flex-grow: 1;
-}
-.user-select-group img {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    object-fit: cover;
-}
-.user-select-group.report-user {
+
+.search-select-wrapper.report-user {
     margin-bottom: 24px;
 }
 
@@ -148,6 +141,7 @@ select.form-control {
     font-weight: 500;
     cursor: pointer;
 }
+
 .date-input::-webkit-calendar-picker-indicator {
     cursor: pointer;
     filter: invert(50%);
@@ -162,6 +156,7 @@ select.form-control {
     padding: 8px;
     margin-top: 8px;
 }
+
 .file-info {
     font-size: 0.85em;
     color: var(--text-light);
@@ -171,10 +166,12 @@ select.form-control {
     text-overflow: ellipsis;
     transition: color 0.2s ease;
 }
+
 .file-info.selected {
     color: var(--primary-color);
     font-weight: 500;
 }
+
 .button-group {
     display: flex;
     gap: 8px;
@@ -185,8 +182,15 @@ select.form-control {
     font-weight: 500;
     margin-left: 8px;
 }
-.limit-info.warning { color: var(--warning-color); }
-.limit-info.danger { color: var(--danger-color); font-weight: 600; }
+
+.limit-info.warning {
+    color: var(--warning-color);
+}
+
+.limit-info.danger {
+    color: var(--danger-color);
+    font-weight: 600;
+}
 
 /* --- Botões --- */
 .btn {
@@ -199,85 +203,111 @@ select.form-control {
     border: none;
     transition: background-color 0.2s ease, transform 0.1s ease;
 }
+
 .btn:active {
     transform: scale(0.98);
 }
+
 .btn-primary {
     background-color: var(--primary-color);
     color: white;
     margin-top: 16px;
 }
+
 .btn-primary:hover {
     background-color: var(--primary-hover);
 }
+
 .btn-secondary {
     padding: 8px 12px;
     font-size: 0.85em;
     background-color: var(--text-dark);
     color: white;
 }
+
 .btn:disabled {
     background-color: #cccccc;
     cursor: not-allowed;
 }
 
-/* --- Estilos para o Seletor Pesquisável (Choices.js) --- */
-.choices {
-    width: 100%;
+
+/* --- NOVO: Seletor de Usuário Pesquisável --- */
+.search-select-wrapper {
+    position: relative;
+    width: 60%;
 }
-.choices__inner {
-    border: none;
-    background-color: transparent;
-    padding: 0;
+.search-select-trigger {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+}
+.search-select-trigger img {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+.search-select-trigger .selected-user-name {
     font-size: 1.2em;
     font-weight: 700;
     color: var(--text-dark);
-    min-height: auto;
-    border-radius: 0;
 }
-.choices[data-type*="select-one"] .choices__inner {
-    padding-bottom: 0;
+.search-select-options {
+    position: absolute;
+    top: 110%;
+    left: 0;
+    width: 100%;
+    max-height: 250px;
+    overflow-y: auto;
+    background-color: var(--container-bg);
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    z-index: 10;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(10px);
+    transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s;
 }
-.choices__list--single {
-    padding: 0;
+.search-select-wrapper.open .search-select-options {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
 }
-.choices[data-type*="select-one"]:after {
-    content: '';
-    height: 10px;
-    width: 10px;
-    border-style: solid;
-    border-color: var(--text-light);
-    border-width: 0 2px 2px 0;
-    right: 0.5em;
-    top: 50%;
-    transform: translateY(-75%) rotate(45deg);
-    margin-top: 0;
-    border-radius: 1px;
+.search-select-search {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-bottom: 1px solid var(--border-color);
+    box-sizing: border-box;
+    font-size: 0.95em;
 }
-.choices.is-open:after {
-    margin-top: 0;
-    transform: translateY(-25%) rotate(-135deg);
+.search-select-search:focus {
+    outline: none;
+    border-color: var(--primary-color);
 }
-.choices__list--dropdown {
-    border: 1px solid var(--border-color);
-    border-radius: 12px;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.1);
-    margin-top: 8px !important;
-}
-.choices__input {
-    background-color: var(--input-bg);
-    border-radius: 8px;
-    padding: 8px;
-    font-size: 1rem;
-    margin-bottom: 0;
-}
-.choices__item--choice {
+.options-list .option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
     padding: 10px 12px;
-    font-size: 1rem;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+.options-list .option:hover {
+    background-color: var(--input-bg);
+}
+.options-list .option img {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+.options-list .option span {
     font-weight: 500;
 }
-.choices__item--choice.is-highlighted {
-    background-color: var(--primary-color);
+.options-list .option.hidden {
+    display: none;
 }
 
 
@@ -292,12 +322,6 @@ select.form-control {
         min-height: 100vh;
         box-shadow: none;
         padding: 16px;
-        padding-bottom: 90px; /* Mais espaço para a nav no celular */
-    }
-    .tab-nav {
-      left: 10px;
-      right: 10px;
-      bottom: 10px;
     }
     .form-grid {
         grid-template-columns: 1fr;
@@ -308,10 +332,7 @@ select.form-control {
         align-items: flex-start;
         gap: 16px;
     }
-    .user-select-group {
-        width: 100%;
-    }
-    .choices__inner {
+    .search-select-trigger .selected-user-name {
         font-size: 1.1em;
     }
     .file-upload-area {

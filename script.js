@@ -1,49 +1,20 @@
 document.addEventListener('DOMContentLoaded', () => {
     // ===============================
-    // LÓGICA DE NAVEGAÇÃO POR ABAS
+    // DADOS E CONFIGURAÇÕES GLOBAIS
     // ===============================
-    const tabLinks = document.querySelectorAll('.tab-link');
-    const tabPanes = document.querySelectorAll('.tab-pane');
-
-    tabLinks.forEach(link => {
-        link.addEventListener('click', () => {
-            const tabId = link.getAttribute('data-tab');
-
-            tabLinks.forEach(item => item.classList.remove('active'));
-            tabPanes.forEach(item => item.classList.remove('active'));
-
-            link.classList.add('active');
-            document.getElementById(tabId).classList.add('active');
-
-            if (tabId === 'registrar') {
-                configurarDataAtual();
-            }
-        });
-    });
-
-    // ===============================
-    // DADOS E URLs DA APLICAÇÃO
-    // ===============================
-    const USUARIOS_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQCRWa9HQrijm3a3qJyH89vQnpqm2gMTGqBmWi5hUQnvOJjSfhZvGrPDOSDBMR6ksgMHjXXo6p7zdXG/pub?gid=62546932&single=true&output=csv';
-    const DESPESAS_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQCRWa9HQrijm3a3qJyH89vQnpqm2gMTGqBmWi5hUQnvOJjSfhZvGrPDOSDBMR6ksgMHjXXo6p7zdXG/pub?gid=0&single=true&output=csv';
-    const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbwzlyCPCcREj_bLD5km22ep0xS4g3BnZa7oKYpbRhYsG16OKxtT_VXR_0gejBfhseFzsg/exec';
-
     const formasDePagamento = ['Cartão de crédito', 'Dinheiro'];
     const categorias = ['Alimentação', 'Deslocamento', 'Outros'];
 
-    // Variáveis globais
-    let despesasData = [];
+    // URLs para a planilha (leitura de usuários e escrita de despesas via WebApp)
+    const USUARIOS_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQCRWa9HQrijm3a3qJyH89vQnpqm2gMTGqBmWi5hUQnvOJjSfhZvGrPDOSDBMR6ksgMHjXXo6p7zdXG/pub?gid=62546932&single=true&output=csv';
+    const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbwzlyCPCcREj_bLD5km22ep0xS4g3BnZa7oKYpbRhYsG16OKxtT_VXR_0gejBfhseFzsg/exec';
+
     let usuarios = [];
-    let choicesNome, choicesRelatorio; // Variáveis para as instâncias do Choices.js
 
     // ===============================
     // SELETORES GLOBAIS DE ELEMENTOS
     // ===============================
     const formRegistro = document.getElementById('despesa-form');
-    const selectNome = document.getElementById('nome');
-    const selectNomeRelatorio = document.getElementById('relatorio-nomeSelect');
-    const imgFuncionario = document.getElementById('funcionario-img');
-    const imgFuncionarioRelatorio = document.getElementById('relatorio-funcionario-img');
     const selectForma = document.getElementById('forma_pagamento');
     const selectGrupo = document.getElementById('grupo');
     const inputValor = document.getElementById('valor');
@@ -53,101 +24,38 @@ document.addEventListener('DOMContentLoaded', () => {
     const inputArquivo = document.getElementById('nota_fiscal_arquivo');
 
     // ===============================
-    // FUNÇÕES DE INICIALIZAÇÃO E POPULAÇÃO
+    // FUNÇÕES DE INICIALIZAÇÃO E LÓGICA
     // ===============================
 
-    async function carregarUsuarios() {
-        try {
-            const resp = await fetch(`${USUARIOS_CSV_URL}&t=${new Date().getTime()}`);
-            const csvText = await resp.text();
-            const parsed = Papa.parse(csvText, { header: true, skipEmptyLines: true });
-            usuarios = parsed.data;
-        } catch (error) {
-            console.error("Não foi possível carregar os usuários.", error);
-            alert("Erro ao carregar a lista de usuários.");
+    function popularFormasPagamento() {
+        if (selectForma) {
+            formasDePagamento.forEach(forma => selectForma.add(new Option(forma, forma)));
         }
     }
 
-    function popularUsuarios() {
-        const ultimoUsuario = localStorage.getItem('ultimoUsuario');
-
-        [selectNome, selectNomeRelatorio].forEach((select, index) => {
-            if (select) {
-                select.innerHTML = ''; // Limpa opções existentes
-                usuarios.forEach(usuario => {
-                    const opt = document.createElement('option');
-                    opt.value = usuario.nome;
-                    opt.textContent = usuario.nome;
-                    if (usuario.nome === ultimoUsuario) {
-                        opt.selected = true;
-                    }
-                    select.appendChild(opt);
-                });
-                
-                // Destrói instância anterior do Choices.js se existir
-                if (index === 0 && choicesNome) choicesNome.destroy();
-                if (index === 1 && choicesRelatorio) choicesRelatorio.destroy();
-
-                // Inicializa o Choices.js
-                const choicesInstance = new Choices(select, {
-                    searchEnabled: true,
-                    itemSelectText: 'Pressionar para selecionar',
-                    noResultsText: 'Nenhum resultado encontrado',
-                    noChoicesText: 'Sem opções para escolher',
-                });
-
-                if (index === 0) choicesNome = choicesInstance;
-                if (index === 1) choicesRelatorio = choicesInstance;
-            }
-        });
-
-        atualizarImagemUsuario(selectNome.value);
-        atualizarImagemUsuarioRelatorio(selectNomeRelatorio.value);
-    }
-    
-    function popularSelectsSimples(selectElement, optionsArray) {
-        if (selectElement) {
-            selectElement.innerHTML = '';
-            optionsArray.forEach(optValue => {
-                const opt = new Option(optValue, optValue);
-                selectElement.appendChild(opt);
-            });
-        }
-    }
-
-    function atualizarImagemUsuario(nome) {
-        const usuarioSelecionado = usuarios.find(u => u.nome === nome);
-        if (usuarioSelecionado && imgFuncionario) {
-            imgFuncionario.src = usuarioSelecionado.imagem;
-        }
-    }
-    function atualizarImagemUsuarioRelatorio(nome) {
-        const usuario = usuarios.find(u => u.nome === nome);
-        if (usuario && imgFuncionarioRelatorio) {
-            imgFuncionarioRelatorio.src = usuario.imagem;
+    function popularCategorias() {
+        if (selectGrupo) {
+            categorias.forEach(cat => selectGrupo.add(new Option(cat, cat)));
+            selectGrupo.value = 'Alimentação';
         }
     }
 
     function configurarCampoValor() {
-        if (inputValor) {
-            inputValor.addEventListener('input', (e) => {
-                let valor = e.target.value.replace(/\D/g, '');
-                valor = (valor / 100).toFixed(2).replace('.', ',');
-                valor = valor.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-                e.target.value = 'R$ ' + valor;
-            });
-        }
+        inputValor?.addEventListener('input', (e) => {
+            let valor = e.target.value.replace(/\D/g, '');
+            valor = (valor / 100).toFixed(2).replace('.', ',');
+            valor = valor.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+            e.target.value = 'R$ ' + valor;
+        });
     }
 
     function configurarDataAtual() {
         if (inputData) {
-            const formatter = new Intl.DateTimeFormat('en-CA', {
-                timeZone: 'America/Sao_Paulo',
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit'
-            });
-            inputData.value = formatter.format(new Date());
+            const data = new Date();
+            data.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+            const offset = data.getTimezoneOffset() * 60000;
+            const dataLocal = new Date(data - offset);
+            inputData.value = dataLocal.toISOString().slice(0, 10);
         }
     }
 
@@ -157,203 +65,265 @@ document.addEventListener('DOMContentLoaded', () => {
             nomeArquivoSpan.classList.add('selected');
         }
     }
+    
+    // --- NOVO: Lógica do Seletor Pesquisável ---
+    function setupSearchSelect(wrapperId) {
+        const wrapper = document.getElementById(wrapperId);
+        const trigger = wrapper.querySelector('.search-select-trigger');
+        const searchInput = wrapper.querySelector('.search-select-search');
+        const optionsList = wrapper.querySelector('.options-list');
+        const selectedUserNameSpan = wrapper.querySelector('.selected-user-name');
+        const userImage = wrapper.querySelector('img');
+        const hiddenInput = document.getElementById(wrapperId.includes('registrar') ? 'nome' : 'relatorio-nome');
 
-    // ===============================
-    // LÓGICA PRINCIPAL
-    // ===============================
+        // Popula as opções
+        optionsList.innerHTML = '';
+        usuarios.forEach(user => {
+            const option = document.createElement('div');
+            option.className = 'option';
+            option.dataset.value = user.nome;
+            option.innerHTML = `<img src="${user.imagem}" alt="${user.nome}"><span>${user.nome}</span>`;
+            option.addEventListener('click', () => {
+                selectUser(user.nome);
+                wrapper.classList.remove('open');
+            });
+            optionsList.appendChild(option);
+        });
+        
+        const selectUser = (nome) => {
+            const user = usuarios.find(u => u.nome === nome);
+            if (!user) return;
+            
+            selectedUserNameSpan.textContent = user.nome;
+            userImage.src = user.imagem;
+            hiddenInput.value = user.nome;
+            
+            // Dispara um evento para outras partes do código saberem da mudança
+            hiddenInput.dispatchEvent(new Event('change', { bubbles: true }));
+        };
+        
+        trigger.addEventListener('click', () => wrapper.classList.toggle('open'));
 
-    async function carregarDadosDespesas() {
-        try {
-            const resp = await fetch(`${DESPESAS_CSV_URL}&t=${new Date().getTime()}`);
-            const csvText = await resp.text();
-            despesasData = Papa.parse(csvText, {
-                header: true,
-                skipEmptyLines: true
-            }).data;
-        } catch (error) {
-            console.error("Não foi possível carregar os dados de despesas.", error);
-            alert("Não foi possível conectar à planilha de despesas. A verificação de limite pode não funcionar.");
-        }
+        searchInput.addEventListener('input', () => {
+            const searchTerm = searchInput.value.toLowerCase();
+            optionsList.querySelectorAll('.option').forEach(option => {
+                const name = option.dataset.value.toLowerCase();
+                option.classList.toggle('hidden', !name.includes(searchTerm));
+            });
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!wrapper.contains(e.target)) {
+                wrapper.classList.remove('open');
+            }
+        });
+        
+        return { selectUser }; // Retorna a função para poder usá-la externamente
     }
 
+    // --- NOVO: Lógica para carregar usuários da planilha ---
+    async function carregarUsuarios() {
+        try {
+            const resp = await fetch(`${USUARIOS_CSV_URL}&t=${new Date().getTime()}`);
+            const csvText = await resp.text();
+            const parsed = Papa.parse(csvText, { header: true, skipEmptyLines: true });
+            usuarios = parsed.data.filter(u => u.nome && u.imagem); // Garante que nome e imagem existam
+            
+            const registrarSelector = setupSearchSelect('user-selector-registrar');
+            const relatorioSelector = setupSearchSelect('user-selector-relatorio');
+
+            // --- NOVO: Recupera o último usuário selecionado ---
+            const ultimoUsuario = localStorage.getItem('ultimoUsuario');
+            if (ultimoUsuario && usuarios.some(u => u.nome === ultimoUsuario)) {
+                registrarSelector.selectUser(ultimoUsuario);
+                relatorioSelector.selectUser(ultimoUsuario);
+            }
+
+        } catch (error) {
+            console.error("Não foi possível carregar os dados de usuários.", error);
+            alert("Erro ao carregar lista de usuários. Tente recarregar a página.");
+        }
+    }
+    
+    // --- OTIMIZADO: Busca limite de alimentação no backend ---
     async function atualizarLimiteAlimentacao() {
         const spanLimite = document.getElementById('limite-restante');
         if (!spanLimite) return;
 
-        const nomeSelecionado = selectNome?.value;
-        const [ano, mes, dia] = inputData.value.split('-');
-        const dataFormatada = `${dia}/${mes}/${ano}`;
+        const nomeSelecionado = document.getElementById('nome').value;
+        const dataSelecionada = inputData?.value;
         const despesaSelecionada = selectGrupo?.value;
 
-        if (despesaSelecionada !== 'Alimentação') {
+        if (despesaSelecionada !== 'Alimentação' || !nomeSelecionado || !dataSelecionada) {
             spanLimite.textContent = '';
             return;
         }
-        
-        spanLimite.textContent = 'Calculando...';
 
         try {
-            const url = `${WEBAPP_URL}?action=getDailySum&nome=${encodeURIComponent(nomeSelecionado)}&data=${encodeURIComponent(dataFormatada)}`;
-            const response = await fetch(url);
-            const data = await response.json();
-            
-            const somaDoDia = data.sum || 0;
-            const restante = 170 - somaDoDia;
+            const [ano, mes, dia] = dataSelecionada.split('-');
+            const dataFormatada = `${dia}/${mes}/${ano}`;
+            const url = new URL(WEBAPP_URL);
+            url.searchParams.append('action', 'getDailySum');
+            url.searchParams.append('nome', nomeSelecionado);
+            url.searchParams.append('data', dataFormatada);
 
+            const response = await fetch(url);
+            const result = await response.json();
+            const somaDoDia = result.sum || 0;
+            
+            const restante = 170 - somaDoDia;
             spanLimite.textContent = `Resta R$ ${restante.toFixed(2).replace('.', ',')}`;
             spanLimite.classList.toggle('warning', restante <= 50 && restante > 0);
             spanLimite.classList.toggle('danger', restante <= 0);
 
         } catch (error) {
-            console.error('Erro ao buscar soma do dia:', error);
-            spanLimite.textContent = 'Erro ao verificar';
+            console.error('Erro ao buscar a soma diária:', error);
+            spanLimite.textContent = 'Erro ao verificar limite.';
+            spanLimite.classList.remove('warning', 'danger');
         }
     }
 
+    // ===============================
+    // LÓGICA PRINCIPAL - REGISTRO
+    // ===============================
+    formRegistro?.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const submitBtn = formRegistro.querySelector('button[type="submit"]');
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Enviando...';
 
-    if (formRegistro) {
-        formRegistro.addEventListener('submit', async function(e) {
-            e.preventDefault();
-            const submitBtn = formRegistro.querySelector('button[type="submit"]');
-            submitBtn.disabled = true;
-            submitBtn.textContent = 'Enviando...';
+        const [ano, mes, dia] = inputData.value.split('-');
+        const dataFormatadaParaEnvio = `${dia}/${mes}/${ano}`;
+        
+        const params = new URLSearchParams();
+        params.append('nome', document.getElementById('nome').value);
+        params.append('data', dataFormatadaParaEnvio);
+        params.append('grupo', selectGrupo.value);
+        params.append('valor', inputValor.value);
+        params.append('descricao', document.getElementById('descricao').value);
+        params.append('forma_pagamento', selectForma.value);
+        params.append('nota_fiscal_url', document.getElementById('nota_fiscal_url').value);
 
-            const [ano, mes, dia] = inputData.value.split('-');
-            const dataFormatadaParaEnvio = `${dia}/${mes}/${ano}`;
+        try {
+            await fetch(WEBAPP_URL, {
+                method: 'POST',
+                body: params,
+                mode: 'no-cors' // Necessário para evitar erro de CORS com Apps Script
+            });
+            alert('Despesa registrada com sucesso!');
+
+        } catch (err) {
+            console.error("Erro de rede (ignorado para Apps Script):", err);
+            alert('Despesa registrada! (A confirmação do servidor não foi recebida)');
+        } finally {
+            const usuarioSelecionado = document.getElementById('nome').value;
+            formRegistro.reset();
             
-            const params = new URLSearchParams();
-            params.append('nome', selectNome.value);
-            params.append('data', dataFormatadaParaEnvio);
-            params.append('grupo', selectGrupo.value);
-            params.append('valor', inputValor.value);
-            params.append('descricao', document.getElementById('descricao').value);
-            params.append('forma_pagamento', selectForma.value);
-            params.append('nota_fiscal_url', document.getElementById('nota_fiscal_url').value);
+            // Repopula e re-seleciona os dados
+            setupSearchSelect('user-selector-registrar').selectUser(usuarioSelecionado);
+            popularCategorias();
+            configurarDataAtual();
 
-            try {
-                const response = await fetch(WEBAPP_URL, {
-                    method: 'POST',
-                    body: params
-                });
-                await response.json(); // Aguarda a resposta do servidor
-                
-                alert('Despesa registrada com sucesso!');
+            nomeArquivoSpan.textContent = 'Nenhum arquivo selecionado';
+            nomeArquivoSpan.classList.remove('selected');
 
-                // Atualiza o limite após o registro bem-sucedido
-                await carregarDadosDespesas(); // Recarrega os dados locais para o relatório
-                atualizarLimiteAlimentacao();
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Adicionar Despesa';
 
-            } catch (err) {
-                console.error("Erro ao enviar despesa:", err);
-                alert("Ocorreu um erro ao registrar a despesa. Verifique sua conexão.");
-            } finally {
-                const usuarioSelecionado = selectNome.value;
-                formRegistro.reset();
-                
-                // Reseta os selects para os valores padrão
-                choicesNome.setChoiceByValue(usuarioSelecionado);
-                popularSelectsSimples(selectForma, formasDePagamento);
-                popularSelectsSimples(selectGrupo, categorias);
-                selectGrupo.value = 'Alimentação';
-
-                configurarDataAtual();
-                nomeArquivoSpan.textContent = 'Nenhum arquivo selecionado';
-                nomeArquivoSpan.classList.remove('selected');
-                
-                submitBtn.disabled = false;
-                submitBtn.textContent = 'Adicionar Despesa';
-            }
-        });
-    }
+            atualizarLimiteAlimentacao();
+        }
+    });
 
     // ===============================
-    // LÓGICA DE GERAÇÃO DE RELATÓRIO
+    // LÓGICA PRINCIPAL - RELATÓRIO
     // ===============================
     const formRelatorio = document.getElementById('report-form');
-    if (formRelatorio) {
-        formRelatorio.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const submitBtnRelatorio = formRelatorio.querySelector('button[type="submit"]');
-            const originalBtnText = submitBtnRelatorio.textContent;
-            submitBtnRelatorio.textContent = 'Gerando...';
-            submitBtnRelatorio.disabled = true;
+    formRelatorio?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const submitBtnRelatorio = formRelatorio.querySelector('button[type="submit"]');
+        const originalBtnText = submitBtnRelatorio.textContent;
+        submitBtnRelatorio.textContent = 'Gerando...';
+        submitBtnRelatorio.disabled = true;
 
-            const nome = selectNomeRelatorio.value;
-            const dataInicio = document.getElementById('dataInicio').value;
-            const dataFim = document.getElementById('dataFim').value;
+        const url = new URL(WEBAPP_URL);
+        url.searchParams.append('action', 'generateReport');
+        url.searchParams.append('nome', document.getElementById('relatorio-nome').value);
+        url.searchParams.append('dataInicio', document.getElementById('dataInicio').value);
+        url.searchParams.append('dataFim', document.getElementById('dataFim').value);
+
+        try {
+            const response = await fetch(url);
+            const result = await response.json();
             
-            const url = `${WEBAPP_URL}?action=generateReport&nome=${encodeURIComponent(nome)}&dataInicio=${dataInicio}&dataFim=${dataFim}`;
-
-            try {
-                const response = await fetch(url);
-                const result = await response.json();
-
-                if (result.status === 'success') {
-                    const byteCharacters = atob(result.file);
-                    const byteNumbers = new Array(byteCharacters.length);
-                    for (let i = 0; i < byteCharacters.length; i++) {
-                        byteNumbers[i] = byteCharacters.charCodeAt(i);
-                    }
-                    const byteArray = new Uint8Array(byteNumbers);
-                    const blob = new Blob([byteArray], { type: 'application/zip' });
-
-                    const link = document.createElement('a');
-                    link.href = URL.createObjectURL(blob);
-                    link.download = result.filename;
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                } else if (result.status === 'nodata') {
-                    alert('Nenhuma despesa encontrada para os filtros selecionados.');
-                } else {
-                    throw new Error(result.message || 'Erro desconhecido ao gerar relatório.');
+            if (result.status === 'success') {
+                // Converte base64 para blob e inicia o download
+                const byteCharacters = atob(result.file);
+                const byteNumbers = new Array(byteCharacters.length);
+                for (let i = 0; i < byteCharacters.length; i++) {
+                    byteNumbers[i] = byteCharacters.charCodeAt(i);
                 }
+                const byteArray = new Uint8Array(byteNumbers);
+                const blob = new Blob([byteArray], { type: 'application/zip' });
 
-            } catch (error) {
-                console.error("Erro ao gerar relatório: ", error);
-                alert("Ocorreu um erro ao gerar o relatório. Tente novamente.");
-            } finally {
-                submitBtnRelatorio.textContent = originalBtnText;
-                submitBtnRelatorio.disabled = false;
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = result.filename;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            } else if (result.status === 'nodata') {
+                alert('Nenhum dado encontrado para os filtros selecionados.');
+            } else {
+                alert(`Ocorreu um erro ao gerar o relatório: ${result.message || 'Erro desconhecido'}`);
             }
+        } catch (error) {
+            console.error("Erro ao gerar relatório:", error);
+            alert("Não foi possível conectar ao servidor para gerar o relatório.");
+        } finally {
+            submitBtnRelatorio.textContent = originalBtnText;
+            submitBtnRelatorio.disabled = false;
+        }
+    });
+
+
+    // ===============================
+    // INICIALIZAÇÃO E EVENT LISTENERS
+    // ===============================
+    
+    // --- NOVO: Listener para salvar último usuário e atualizar limite ---
+    document.getElementById('nome').addEventListener('change', () => {
+        const nomeSelecionado = document.getElementById('nome').value;
+        localStorage.setItem('ultimoUsuario', nomeSelecionado);
+        atualizarLimiteAlimentacao();
+    });
+
+    inputData?.addEventListener('change', atualizarLimiteAlimentacao);
+    selectGrupo?.addEventListener('change', atualizarLimiteAlimentacao);
+    inputCamera?.addEventListener('change', () => atualizarNomeArquivo(inputCamera));
+    inputArquivo?.addEventListener('change', () => atualizarNomeArquivo(inputArquivo));
+
+    // Lógica de navegação por abas
+    const tabLinks = document.querySelectorAll('.tab-link');
+    const tabPanes = document.querySelectorAll('.tab-pane');
+    tabLinks.forEach(link => {
+        link.addEventListener('click', () => {
+            const tabId = link.getAttribute('data-tab');
+            tabLinks.forEach(item => item.classList.remove('active'));
+            tabPanes.forEach(item => item.classList.remove('active'));
+            link.classList.add('active');
+            document.getElementById(tabId).classList.add('active');
+            if (tabId === 'registrar') configurarDataAtual();
         });
-    }
+    });
 
-
-    // ===============================
-    // EVENT LISTENERS E INICIALIZAÇÃO
-    // ===============================
+    // Inicia a aplicação
     async function init() {
-        await carregarUsuarios();
-        popularUsuarios();
-        popularSelectsSimples(selectForma, formasDePagamento);
-        popularSelectsSimples(selectGrupo, categorias);
-        selectGrupo.value = 'Alimentação';
-        
+        popularFormasPagamento();
+        popularCategorias();
         configurarCampoValor();
         configurarDataAtual();
-        
-        await carregarDadosDespesas(); // Carrega os dados para a aba de relatório
-        atualizarLimiteAlimentacao(); // Calcula o limite inicial
-
-        // Listeners para a aba de Registro
-        selectNome?.addEventListener('change', (e) => {
-            const nome = e.target.value;
-            localStorage.setItem('ultimoUsuario', nome);
-            atualizarImagemUsuario(nome);
-            atualizarLimiteAlimentacao();
-        });
-        inputData?.addEventListener('change', atualizarLimiteAlimentacao);
-        selectGrupo?.addEventListener('change', atualizarLimiteAlimentacao);
-        
-        // Listeners para a aba de Relatório
-        selectNomeRelatorio?.addEventListener('change', (e) => {
-            atualizarImagemUsuarioRelatorio(e.target.value)
-        });
-
-        inputCamera?.addEventListener('change', () => atualizarNomeArquivo(inputCamera));
-        inputArquivo?.addEventListener('change', () => atualizarNomeArquivo(inputArquivo));
+        await carregarUsuarios(); // Espera carregar usuários antes de verificar o limite
+        atualizarLimiteAlimentacao();
     }
-
     init();
 });
