@@ -31,15 +31,22 @@ body {
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
     padding: 24px;
     box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
 }
 
-/* --- Navegação por Abas --- */
+/* --- Conteúdo principal --- */
+.tab-content {
+    flex-grow: 1; /* Ocupa o espaço disponível */
+}
+
+/* --- Navegação por Abas (Desktop) --- */
 .tab-nav {
     display: flex;
     background-color: #eef0f2;
     border-radius: 10px;
     padding: 4px;
-    margin-bottom: 24px;
+    margin-top: 24px; /* Espaçamento no desktop */
 }
 .tab-link {
     flex: 1;
@@ -118,7 +125,6 @@ select.form-control {
     display: flex;
     align-items: center;
     gap: 12px;
-    /* Adicionado para garantir que o seletor possa crescer */
     flex-grow: 1;
 }
 .user-select-group img {
@@ -126,7 +132,6 @@ select.form-control {
     height: 40px;
     border-radius: 50%;
     object-fit: cover;
-    /* Garante que a imagem não encolha */
     flex-shrink: 0;
 }
 
@@ -164,7 +169,6 @@ select.form-control {
 .choices__item--choice {
     padding: 10px;
 }
-
 
 .user-select-group.report-user {
     margin-bottom: 24px;
@@ -249,40 +253,67 @@ select.form-control {
     cursor: not-allowed;
 }
 
-/* --- Responsividade para telas menores (COM MELHORIAS) --- */
+/* --- Responsividade e Design de App --- */
 @media (max-width: 480px) {
     body {
         padding: 0;
-        align-items: flex-start; /* Em telas pequenas, o container começa do topo */
+        align-items: flex-start;
     }
     .app-container {
         border-radius: 0;
         min-height: 100vh;
         box-shadow: none;
-        padding: 16px; /* Diminui o padding lateral */
+        padding: 16px 16px 80px 16px; /* Aumenta o padding inferior para a barra de navegação */
+        position: relative;
     }
+
+    /* --- Barra de Navegação Inferior --- */
+    .tab-nav {
+        position: fixed; /* Fixa a barra na parte inferior */
+        bottom: 0;
+        left: 0;
+        right: 0;
+        width: 100%;
+        margin: 0;
+        padding: 8px;
+        background-color: var(--container-bg);
+        border-top: 1px solid var(--border-color);
+        border-radius: 0;
+        box-shadow: 0 -4px 12px rgba(0,0,0,0.05);
+        z-index: 1000;
+        box-sizing: border-box;
+    }
+    .tab-link.active {
+        background-color: var(--primary-color);
+        color: white;
+        box-shadow: none;
+    }
+    .tab-link {
+        font-size: 1em;
+    }
+    
     .form-grid {
         grid-template-columns: 1fr;
-        gap: 0; /* Remove o gap para um visual mais compacto */
+        gap: 0; 
     }
     .user-date-group {
-        flex-direction: column; /* Coloca o nome e a data um em cima do outro */
-        align-items: flex-start; /* Alinha à esquerda */
-        gap: 16px; /* Adiciona espaço vertical */
+        flex-direction: column; 
+        align-items: flex-start;
+        gap: 16px; 
     }
     .user-select-group .choices__inner {
-        font-size: 1.1em; /* Reduz um pouco o tamanho do nome */
+        font-size: 1.1em;
     }
     .file-upload-area {
-        flex-direction: column; /* Empilha o nome do arquivo e os botões */
-        align-items: stretch; /* Estica os itens para preencher a largura */
+        flex-direction: column;
+        align-items: stretch;
         gap: 10px;
     }
     .file-info {
-        text-align: center; /* Centraliza o nome do arquivo */
+        text-align: center;
         padding: 4px 0;
     }
     .button-group {
-        flex-direction: column; /* Botões um em cima do outro */
+        flex-direction: column;
     }
 }
