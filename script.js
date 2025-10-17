@@ -145,6 +145,9 @@ document.addEventListener('DOMContentLoaded', () => {
             selectedUserNameSpan.textContent = name;
             userImage.src = imageUrl;
 
+            // Salva o último usuário selecionado no localStorage
+            localStorage.setItem('lastSelectedUser', name);
+
             optionsList.querySelectorAll('.custom-option').forEach(opt => {
                 opt.classList.toggle('selected', opt.dataset.value === name);
             });
@@ -169,8 +172,16 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
         
+        // Define o usuário inicial (o último salvo ou o primeiro da lista)
         if (usuarios.length > 0) {
-            setSelected(usuarios[0].nome, usuarios[0].imagem);
+            const lastUserName = localStorage.getItem('lastSelectedUser');
+            const lastUser = usuarios.find(u => u.nome === lastUserName);
+
+            if (lastUser) {
+                setSelected(lastUser.nome, lastUser.imagem);
+            } else {
+                setSelected(usuarios[0].nome, usuarios[0].imagem);
+            }
         }
 
         trigger.addEventListener('click', () => {
