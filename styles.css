@@ -1,71 +1,110 @@
 :root {
-    --primary-color: #007aff; /* Azul iOS */
-    --primary-hover: #005bb5;
-    --background-color: #f0f2f5; /* Fundo do app (fora do container) */
-    --container-bg: #ffffff;
-    --text-dark: #1c1c1e;
-    --text-light: #8a8a8e;
-    --border-color: #e5e5ea;
-    --input-bg: #f8f8f8;
-    --warning-color: #ff9500; /* Laranja iOS */
-    --danger-color: #ff3b30; /* Vermelho iOS */
+    /* Cores do App 2 (Moto) */
+    --primary-color: #6366F1; /* Indigo */
+    --accent-color: #EC4899; /* Pink */
+    --bg-color: #F3F4F6; /* Gray 100 */
+    --card-bg: #FFFFFF;
+    --text-color: #111827; /* Gray 900 */
+    --text-light: #6B7281; /* Gray 500 */
+    --border-radius: 16px;
+    --shadow: 0 4px 15px rgba(0, 0, 0, 0.06);
+    --app-max-width: 480px; /* Esta variável não é mais usada para o container */
 }
 
-body {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    background-color: var(--background-color);
-    margin: 0;
-    padding: 20px;
-    display: flex;
-    justify-content: center;
-    align-items: center; 
-    min-height: 100vh;
-    color: var(--text-dark);
-}
-
-.app-container {
-    width: 100%;
-    max-width: 500px; 
-    background-color: var(--container-bg);
-    border-radius: 20px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-    padding: 24px;
+* {
     box-sizing: border-box;
 }
 
-/* --- Navegação por Abas (MOVIDA PARA BAIXO) --- */
-.tab-nav {
-    display: flex;
-    background-color: #eef0f2;
-    border-radius: 10px;
-    padding: 4px;
-    margin-top: 24px; /* Ajustado de margin-bottom */
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    /* O fundo claro (do app) agora é o padrão para a tela inteira */
+    background-color: var(--bg-color); 
+    color: var(--text-color);
+    margin: 0;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
-.tab-link {
-    flex: 1;
-    padding: 10px;
-    border: none;
-    background-color: transparent;
-    color: var(--text-light);
-    font-size: 0.95em;
-    font-weight: 600;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: background-color 0.3s ease, color 0.3s ease;
+
+.app-container {
+    /* Ocupa 100% da largura por padrão, sem sombra ou max-width */
+    background-color: var(--bg-color); /* Fundo claro do app */
+    min-height: 100vh;
+    /* Adiciona espaço no fundo para a navegação flutuante */
+    padding: 24px 20px 100px 20px;
 }
-.tab-link.active {
-    background-color: var(--container-bg);
-    color: var(--text-dark);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+
+/* --- Conteúdo das Abas --- */
+.tab-content {
+    flex-grow: 1;
 }
 .tab-pane {
     display: none;
 }
 .tab-pane.active {
     display: block;
+    /* Animação de entrada do App 2 */
+    animation: fadeIn 0.3s ease-in-out;
+}
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
-/* --- Estilos de Formulário --- */
+
+/* --- Navegação por Abas (Estilo App 2) --- */
+.tab-nav {
+    position: fixed;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: calc(100% - 20px);
+    /* max-width será controlado por media queries */
+    background-color: var(--card-bg);
+    border-radius: var(--border-radius);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    display: flex;
+    justify-content: space-around;
+    padding: 6px;
+    gap: 5px;
+    z-index: 100;
+}
+.tab-link {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 10px 5px;
+    font-size: 0.9em;
+    color: var(--text-light);
+    display: flex;
+    flex-direction: column; /* Para ícone + texto */
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    transition: color 0.2s, background-color 0.2s;
+    flex: 1;
+    border-radius: 12px; /* Raio interno */
+    font-weight: 500;
+}
+.tab-link.active {
+    background-color: var(--primary-color);
+    color: white;
+}
+.tab-link:not(.active):hover {
+    background-color: #f4f4f5;
+}
+/* Adicionando ícones (como no App 2) */
+.tab-link[data-tab="registrar"]::before {
+    content: '➕';
+    font-size: 1.2em;
+    line-height: 1;
+}
+.tab-link[data-tab="relatorio"]::before {
+    content: '📊';
+    font-size: 1.2em;
+    line-height: 1;
+}
+
+/* --- Estilos de Formulário (Estilo App 2) --- */
 .form-group {
     margin-bottom: 20px;
 }
@@ -74,58 +113,69 @@ body {
     margin-bottom: 8px;
     font-weight: 500;
     font-size: 0.9em;
-    color: var(--text-dark);
+    color: var(--text-light);
 }
+/* Estilo unificado para inputs e selects */
 .form-control {
     width: 100%;
-    padding: 12px 0;
-    border: none;
-    border-bottom: 2px solid var(--border-color);
-    background-color: transparent;
-    color: var(--text-dark);
+    padding: 15px;
+    border: 1px solid #EAEAEA;
+    border-radius: var(--border-radius);
     font-size: 1em;
-    box-sizing: border-box;
-    transition: border-color 0.2s ease;
+    background-color: #F9F9F9;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    border-bottom: 1px solid #EAEAEA; /* Sobrescreve o border-bottom do App 1 */
+    color: var(--text-color);
 }
 .form-control:focus {
     outline: none;
     border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2); /* Anel de foco */
 }
+/* Adiciona seta de volta ao select */
 select.form-control {
-    appearance: none;
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20fill%3D'%238a8a8e'%20height%3D'24'%20viewBox%3D'0%200%2024%2024'%20width%3D'24'%20xmlns%3D'http%3A//www.w3.org/2000/svg'%3E%3Cpath%20d%3D'M7%2010l5%205%205-5z'/%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20fill%3D'%236B7281'%20height%3D'24'%20viewBox%3D'0%200%2024%2024'%20width%3D'24'%20xmlns%3D'http%3A//www.w3.org/2000/svg'%3E%3Cpath%20d%3D'M7%2010l5%205%205-5z'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
-    background-position: right 0 center;
-    padding-right: 25px;
+    background-position: right 15px center;
+    padding-right: 40px; /* Espaço para a seta */
 }
 
+/* Tira o layout de grid para empilhar os campos (como no App 2) */
 .form-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
+    display: block;
 }
 
-/* --- Componentes Específicos --- */
+/* --- Componentes Específicos (Estilo App 2) --- */
+
+/* Cabeçalho com Seletor de Usuário e Data */
 .user-date-group {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 24px;
+    margin-bottom: 30px; /* Mais espaço */
+    gap: 15px;
 }
 .date-input {
-    border: none;
-    color: var(--text-light);
-    font-weight: 500;
-    cursor: pointer;
+    /* Estiliza o input de data como um campo de formulário do App 2 */
+    padding: 15px;
+    border: 1px solid #EAEAEA;
+    border-radius: var(--border-radius);
+    font-size: 0.9em;
+    background-color: #F9F9F9;
+    color: var(--text-color);
+    text-align: right;
+    max-width: 140px; /* Largura fixa */
+    border-bottom: 1px solid #EAEAEA;
+    height: 66px; /* <-- ADICIONADO AQUI */
 }
 .date-input::-webkit-calendar-picker-indicator {
     cursor: pointer;
-    filter: invert(50%);
+    filter: invert(40%); /* Re-estiliza o ícone */
 }
 
-/* --- NOVO SELETOR DE USUÁRIO COM PESQUISA --- */
+/* Seletor de Usuário Customizado */
 .custom-select-wrapper {
     position: relative;
     cursor: pointer;
@@ -135,47 +185,52 @@ select.form-control {
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 5px;
-    border-radius: 10px;
-    transition: background-color 0.2s ease;
+    /* Estilos de campo de formulário aplicados como padrão */
+    padding: 10px 15px;
+    border: 1px solid #EAEAEA;
+    border-radius: var(--border-radius);
+    background-color: #F9F9F9;
 }
 .custom-select-trigger:hover {
-    background-color: #f0f2f5;
+    background-color: #F3F4F6;
 }
 .custom-select-trigger img {
-    width: 40px;
-    height: 40px;
+    width: 44px; /* Maior */
+    height: 44px;
     border-radius: 50%;
     object-fit: cover;
 }
 .custom-select-trigger .selected-user-name {
-    font-size: 1.2em;
-    font-weight: 700;
-    color: var(--text-dark);
+    /* Estilos de texto de campo de formulário aplicados como padrão */
+    font-size: 1em;
+    font-weight: 500;
+    color: var(--text-color);
 }
+/* Dropdown do Seletor */
 .custom-options {
     position: absolute;
     top: 110%;
     left: 0;
     right: 0;
-    background-color: var(--container-bg);
-    border-radius: 10px;
-    box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+    background-color: var(--card-bg);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow);
     z-index: 10;
     display: none;
     overflow: hidden;
-    border: 1px solid var(--border-color);
+    border: 1px solid #EAEAEA;
 }
 .custom-select-wrapper.open .custom-options {
     display: block;
 }
 .custom-select-search {
     width: 100%;
-    padding: 12px;
+    padding: 15px;
     border: none;
-    border-bottom: 1px solid var(--border-color);
+    border-bottom: 1px solid #EAEAEA;
     box-sizing: border-box;
-    font-size: 0.95em;
+    font-size: 1em;
+    background-color: #F9F9F9;
 }
 .custom-select-search:focus {
     outline: none;
@@ -193,10 +248,10 @@ select.form-control {
     transition: background-color 0.2s ease;
 }
 .custom-option:hover {
-    background-color: #f0f2f5;
+    background-color: var(--bg-color);
 }
 .custom-option.selected {
-    background-color: #eef0f2;
+    background-color: #e8e8f8; /* Tom de indigo claro */
     font-weight: 600;
 }
 .custom-option img {
@@ -205,28 +260,34 @@ select.form-control {
     border-radius: 50%;
     object-fit: cover;
 }
+
+/* Seletor de usuário na aba Relatório */
+/* Agora só precisa da margem, pois os outros estilos são padrão */
 .custom-select-wrapper.report-user {
     margin-bottom: 24px;
 }
-/* --- FIM DOS ESTILOS DO SELETOR --- */
 
+
+/* Área de Upload de Arquivo */
 .file-upload-area {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    background-color: var(--input-bg);
-    border-radius: 10px;
-    padding: 8px;
+    background-color: #F9F9F9; /* Fundo de input */
+    border-radius: var(--border-radius);
+    padding: 10px 15px;
     margin-top: 8px;
+    border: 1px solid #EAEAEA; /* Borda de input */
 }
 .file-info {
-    font-size: 0.85em;
+    font-size: 0.9em;
     color: var(--text-light);
-    padding: 0 12px;
+    padding: 0;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     transition: color 0.2s ease;
+    flex-grow: 1; /* Ocupa espaço */
 }
 .file-info.selected {
     color: var(--primary-color);
@@ -235,17 +296,20 @@ select.form-control {
 .button-group {
     display: flex;
     gap: 8px;
+    flex-shrink: 0; /* Impede que os botões encolham */
 }
 
+/* Info de Limite */
 .limit-info {
     font-size: 0.9em;
     font-weight: 500;
     margin-left: 8px;
 }
-.limit-info.warning { color: var(--warning-color); }
-.limit-info.danger { color: var(--danger-color); font-weight: 600; }
+/* Cores de alerta do App 1, mas podemos usar as do App 2 se quisermos */
+.limit-info.warning { color: #F97316; /* Laranja */ }
+.limit-info.danger { color: #EF4444; /* Vermelho */ font-weight: 600; }
 
-/* --- Botões --- */
+/* --- Botões (Estilo App 2) --- */
 .btn {
     width: 100%;
     padding: 14px;
@@ -259,59 +323,82 @@ select.form-control {
 .btn:active {
     transform: scale(0.98);
 }
+/* Botão Principal (Submit) */
 .btn-primary {
-    background-color: var(--primary-color);
+    padding: 18px; /* Mais alto */
+    background: linear-gradient(to right, var(--primary-color), var(--accent-color));
     color: white;
     margin-top: 16px;
+    border-radius: var(--border-radius);
+    font-size: 1.1em;
+    font-weight: 500;
+    transition: transform 0.2s, box-shadow 0.2s;
 }
 .btn-primary:hover {
-    background-color: var(--primary-hover);
+    background: linear-gradient(to right, var(--primary-color), var(--accent-color));
+    transform: scale(1.02);
+    box-shadow: 0 5px 15px rgba(99, 102, 241, 0.3);
 }
+.btn-primary:disabled {
+    background: #b4b4b4;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+/* Botões secundários (Fotografar, Selecionar) */
 .btn-secondary {
-    padding: 8px 12px;
-    font-size: 0.85em;
-    background-color: var(--text-dark);
+    padding: 10px 14px;
+    font-size: 0.9em;
+    background-color: var(--text-color);
     color: white;
+    border-radius: 10px; /* Um pouco arredondado */
+    font-weight: 500;
+}
+.btn-secondary:hover {
+    background-color: #000;
 }
 .btn:disabled {
     background-color: #cccccc;
     cursor: not-allowed;
 }
 
-/* --- Responsividade para telas menores --- */
-@media (max-width: 480px) {
-    body {
-        padding: 0;
-        align-items: flex-start;
-    }
+
+/* --- REGRAS PARA DESKTOP (TELAS MAIORES) --- */
+@media (min-width: 600px) {
     .app-container {
-        border-radius: 0;
-        min-height: 100vh;
-        box-shadow: none;
-        padding: 16px;
+        /* Adiciona espaço no fundo para a barra flutuante não cobrir conteúdo */
+        padding-bottom: 120px;
     }
-    .form-grid {
-        grid-template-columns: 1fr;
-        gap: 0;
+
+    /* Limita a largura do *conteúdo* (abas) para melhor leitura e centraliza */
+    .tab-pane {
+        max-width: 600px;
+        margin-left: auto;
+        margin-right: auto;
     }
-    .user-date-group {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 16px;
-    }
-    .custom-select-trigger .selected-user-name {
-        font-size: 1.1em;
-    }
-    .file-upload-area {
-        flex-direction: column;
-        align-items: stretch;
+    
+    /* --- Estilos da Navegação Inferior para Desktop --- */
+    .tab-nav {
+        width: 100%;
+        max-width: 600px; /* Limita a largura da barra */
+        border-radius: var(--border-radius);
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        padding: 6px;
+        bottom: 20px;
+        justify-content: center;
         gap: 10px;
     }
-    .file-info {
-        text-align: center;
-        padding: 4px 0;
+
+    .tab-link {
+        flex: 0 1 150px; /* Não cresce, encolhe, base de 150px */
+        flex-direction: row; /* Ícone e texto lado a lado */
+        justify-content: center;
+        gap: 8px;
+        font-size: 1em;
+        padding: 12px 20px;
     }
-    .button-group {
-        flex-direction: column;
+
+    .tab-link.active {
+        box-shadow: 0 4px 10px rgba(99, 102, 241, 0.3);
     }
 }
