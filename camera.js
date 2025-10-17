@@ -65,7 +65,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Função para bloquear/desbloquear o botão de envio
   function setSubmitEnabled(enabled) {
-    if (btnSubmit) btnSubmit.disabled = !enabled;
+    if (btnSubmit) {
+        btnSubmit.disabled = !enabled;
+        btnSubmit.textContent = enabled ? 'Adicionar despesa' : 'Enviando foto...';
+    }
   }
 
   // Ao selecionar/capturar arquivo, desabilita o submit e faz upload
@@ -80,10 +83,91 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+  // ===============================================================
+  // NOVA FUNÇÃO PARA COMPRIMIR A IMAGEM ANTES DO UPLOAD
+  // ===============================================================
+  /**
+   * Redimensiona e comprime uma imagem.
+   * @param {File} arquivo - O arquivo de imagem original.
+   * @param {number} maxWidth - A largura máxima desejada (ex: 1200).
+   * @param {number} quality - A qualidade do JPEG (de 0.0 a 1.0, ex: 0.85).
+   * @returns {Promise<Blob>} - Uma Promise que resolve com o novo Blob (arquivo) comprimido.
+   */
+  function comprimirImagem(arquivo, maxWidth, quality) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      // Cria uma URL temporária para a imagem
+      img.src = URL.createObjectURL(arquivo);
+      
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        let width = img.width;
+        let height = img.height;
+
+        // Calcula as novas dimensões mantendo a proporção
+        if (width > maxWidth) {
+          height = (maxWidth / width) * height;
+          width = maxWidth;
+        }
+        
+        canvas.width = width;
+        canvas.height = height;
+        
+        // Desenha a imagem no canvas com o novo tamanho
+        ctx.drawImage(img, 0, 0, width, height);
+        
+        // Converte o canvas de volta para um arquivo (Blob)
+        canvas.toBlob(
+          (blob) => {
+            resolve(blob);
+          },
+          'image/jpeg', // Força o formato JPEG (com perdas, menor)
+          quality       // Aplica a qualidade definida
+        );
+        
+        // Limpa a memória
+        URL.revokeObjectURL(img.src);
+      };
+      
+      img.onerror = (error) => {
+        URL.revokeObjectURL(img.src);
+        reject(error);
+      };
+    });
+  }
+  // ===============================================================
+
   async function uploadParaImgur(arquivo) {
     const CLIENT_ID = '2d40b07371c4c21';
+
+    // --- INÍCIO DA MODIFICAÇÃO ---
+    let arquivoParaUpload = arquivo;
+    try {
+      // Comprime para no máximo 1200px de largura e 85% de qualidade
+      console.log(`Tamanho original: ${(arquivo.size / 1024 / 1024).toFixed(2)} MB`);
+      
+      const blobComprimido = await comprimirImagem(arquivo, 1200, 0.85);
+      
+      // Cria um novo objeto File a partir do Blob
+      arquivoParaUpload = new File([blobComprimido], arquivo.name, {
+          type: 'image/jpeg',
+          lastModified: Date.now(),
+      });
+      
+      console.log(`Tamanho comprimido: ${(arquivoParaUpload.size / 1024 / 1024).toFixed(2)} MB`);
+
+    } catch (err) {
+      console.error("Erro ao comprimir imagem, enviando original:", err);
+      // Se falhar a compressão, apenas envia o arquivo original
+      arquivoParaUpload = arquivo;
+    }
+    // --- FIM DA MODIFICAÇÃO ---
+
     const formData = new FormData();
-    formData.append('image', arquivo);
+    // Envia o arquivo comprimido (ou o original, se a compressão falhar)
+    formData.append('image', arquivoParaUpload); 
 
     try {
       const response = await fetch('https://api.imgur.com/3/image', {
