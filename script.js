@@ -98,6 +98,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 valor = (valor / 100).toFixed(2).replace('.', ',');
                 valor = valor.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
                 e.target.value = 'R$ ' + valor;
+
+                // CHAMA A ATUALIZAÇÃO DO LIMITE A CADA DIGITAÇÃO
+                atualizarLimiteAlimentacao();
             });
         }
     }
@@ -219,6 +222,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             console.error("Não foi possível carregar os dados de despesas.", error);
             alert("Não foi possível conectar à planilha de despesas. A verificação de limite pode não funcionar.");
+            throw error; // <-- ALTERAÇÃO: Propaga o erro para quem chamou
         }
     }
 
@@ -230,16 +234,20 @@ document.addEventListener('DOMContentLoaded', () => {
         const dataSelecionada = inputData?.value;
         const despesaSelecionada = selectGrupo?.value;
 
+        // Reseta o span se a categoria não for Alimentação
         if (despesaSelecionada !== 'Alimentação') {
             spanLimite.textContent = '';
+            spanLimite.style.color = ''; // Reseta cor
             return;
         }
 
         if (!nomeSelecionado || !dataSelecionada) {
             spanLimite.textContent = 'Resta R$ 170,00';
+            spanLimite.style.color = ''; // Reseta cor
             return;
         }
 
+        // 1. Calcula a soma das despesas JÁ SALVAS no dia
         let somaDoDia = 0;
         despesasData.forEach(row => {
             if (!row.data || !row.nome || !row.grupo) return;
@@ -255,11 +263,40 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
         });
+        
+        // 2. Pega o valor ATUALMENTE DIGITADO no input
+        let valorInputFloat = 0;
+        if (inputValor && inputValor.value) {
+            valorInputFloat = parseFloat(inputValor.value.replace(/[^\d,]/g, '').replace(',', '.')) || 0;
+        }
+        
+        // 3. Calcula o restante
+        const limiteDiario = 170;
+        const restanteBase = limiteDiario - somaDoDia; // O que resta ANTES do valor digitado
+        const restanteFinal = restanteBase - valorInputFloat; // O que resta DEPOIS do valor digitado
 
-        const restante = 170 - somaDoDia;
-        spanLimite.textContent = `Resta R$ ${restante.toFixed(2).replace('.', ',')}`;
-        spanLimite.classList.toggle('warning', restante <= 50 && restante > 0);
-        spanLimite.classList.toggle('danger', restante <= 0);
+        const valorFormatado = Math.abs(restanteFinal).toFixed(2).replace('.', ',');
+        
+        // 4. Atualiza o texto e a cor
+        spanLimite.style.color = ''; // Reseta a cor
+
+        if (restanteFinal < 0) {
+            // Se estourou o limite
+            spanLimite.textContent = `Ultrapassa R$ ${valorFormatado}`;
+            spanLimite.style.color = 'var(--danger-color)';
+        } else {
+            // Se ainda tem limite (ou está em 0)
+            spanLimite.textContent = `Resta R$ ${valorFormatado}`;
+            
+            if (restanteFinal <= 20) {
+                // Perigo (0 a 20)
+                spanLimite.style.color = 'var(--danger-color)';
+            } else if (restanteFinal <= 50) {
+                // Aviso (20.01 a 50)
+                spanLimite.style.color = 'var(--warning-color)';
+            }
+            // Acima de 50, usa a cor padrão (já resetada)
+        }
     }
 
     if (formRegistro) {
@@ -312,6 +349,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 submitBtn.disabled = false;
                 submitBtn.textContent = 'Adicionar Despesa';
 
+                // Atualiza o limite (agora sem o valor do input, que foi resetado)
                 atualizarLimiteAlimentacao();
             }
         });
@@ -334,9 +372,11 @@ document.addEventListener('DOMContentLoaded', () => {
             imageId: 'relatorio-funcionario-img'
         });
 
+        // Adiciona os gatilhos para atualizar o limite
         selectNome?.addEventListener('change', atualizarLimiteAlimentacao);
         inputData?.addEventListener('change', atualizarLimiteAlimentacao);
         selectGrupo?.addEventListener('change', atualizarLimiteAlimentacao);
+        // O listener para inputValor é adicionado em configurarCampoValor()
 
         inputCamera?.addEventListener('change', () => atualizarNomeArquivo(inputCamera));
         inputArquivo?.addEventListener('change', () => atualizarNomeArquivo(inputArquivo));
@@ -347,7 +387,7 @@ document.addEventListener('DOMContentLoaded', () => {
         configurarDataAtual();
 
         await carregarDadosDespesas();
-        atualizarLimiteAlimentacao();
+        atualizarLimiteAlimentacao(); // Chama uma vez no início
     }
 
     init();
@@ -368,14 +408,33 @@ document.addEventListener('DOMContentLoaded', () => {
 
         async function gerarRelatoriosPorCategoria() {
             const originalBtnText = submitBtnRelatorio.textContent;
-            submitBtnRelatorio.textContent = 'Gerando relatórios...';
+            submitBtnRelatorio.textContent = 'Carregando dados...'; // <-- ALTERAÇÃO: Texto inicial
             submitBtnRelatorio.disabled = true;
+
+            // <-- INÍCIO DA ALTERAÇÃO -->
+            // 1. RECARREGA OS DADOS ANTES DE GERAR O RELATÓRIO
+            try {
+                await carregarDadosDespesas();
+                console.log("Dados de despesas recarregados para o relatório.");
+            } catch (error) {
+                console.error("Falha ao recarregar dados para o relatório:", error);
+                // A função carregarDadosDespesas() já exibe um alerta.
+                // Apenas resetamos o botão e paramos a execução.
+                submitBtnRelatorio.textContent = originalBtnText;
+                submitBtnRelatorio.disabled = false;
+                return; // Para a geração do relatório
+            }
+            // <-- FIM DA ALTERAÇÃO -->
+
+            // Se carregou os dados com sucesso, muda o texto e continua
+            submitBtnRelatorio.textContent = 'Gerando relatórios...';
 
             const { jsPDF } = window.jspdf;
             const nomeSelecionado = selectNomeRelatorio.value;
             const dataInicio = document.getElementById('dataInicio').value;
             const dataFim = document.getElementById('dataFim').value;
 
+            // 2. AGORA OS DADOS FILTRADOS USARÃO A VARIÁVEL ATUALIZADA 'despesasData'
             const dadosFiltrados = despesasData.filter(row => {
                 if (!row.data || !row.descricao || !row.nota_fiscal_url || !row.nome) return false;
                 const partes = row.data.split('/');

@@ -8,7 +8,8 @@
     --text-light: #6B7281; /* Gray 500 */
     --border-radius: 16px;
     --shadow: 0 4px 15px rgba(0, 0, 0, 0.06);
-    --app-max-width: 480px; /* Esta variável não é mais usada para o container */
+    --warning-color: #F97316; /* Laranja */
+    --danger-color: #EF4444; /* Vermelho */
 }
 
 * {
@@ -168,7 +169,7 @@ select.form-control {
     text-align: right;
     max-width: 140px; /* Largura fixa */
     border-bottom: 1px solid #EAEAEA;
-    height: 66px; /* <-- ADICIONADO AQUI */
+    height: 66px; 
 }
 .date-input::-webkit-calendar-picker-indicator {
     cursor: pointer;
@@ -272,22 +273,20 @@ select.form-control {
 .file-upload-area {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    background-color: #F9F9F9; /* Fundo de input */
-    border-radius: var(--border-radius);
-    padding: 10px 15px;
+    /* Estilos de caixa removidos (background-color, border, padding, etc) */
     margin-top: 8px;
-    border: 1px solid #EAEAEA; /* Borda de input */
 }
 .file-info {
+    /* Estilos para o span movido para fora */
+    display: block;
+    text-align: center;
+    padding: 8px 0 0 0; /* Espaçamento acima */
     font-size: 0.9em;
     color: var(--text-light);
-    padding: 0;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     transition: color 0.2s ease;
-    flex-grow: 1; /* Ocupa espaço */
 }
 .file-info.selected {
     color: var(--primary-color);
@@ -296,7 +295,8 @@ select.form-control {
 .button-group {
     display: flex;
     gap: 8px;
-    flex-shrink: 0; /* Impede que os botões encolham */
+    flex-shrink: 0;
+    width: 100%; /* Faz o grupo ocupar a largura toda */
 }
 
 /* Info de Limite */
@@ -304,10 +304,8 @@ select.form-control {
     font-size: 0.9em;
     font-weight: 500;
     margin-left: 8px;
+    transition: color 0.3s ease; /* Adiciona transição de cor */
 }
-/* Cores de alerta do App 1, mas podemos usar as do App 2 se quisermos */
-.limit-info.warning { color: #F97316; /* Laranja */ }
-.limit-info.danger { color: #EF4444; /* Vermelho */ font-weight: 600; }
 
 /* --- Botões (Estilo App 2) --- */
 .btn {
@@ -347,15 +345,21 @@ select.form-control {
 }
 /* Botões secundários (Fotografar, Selecionar) */
 .btn-secondary {
-    padding: 10px 14px;
-    font-size: 0.9em;
-    background-color: var(--text-color);
-    color: white;
-    border-radius: 10px; /* Um pouco arredondado */
-    font-weight: 500;
+    padding: 14px; /* Mais alto, como .btn */
+    font-size: 1em; /* Mesmo tamanho de .btn */
+    background-color: var(--card-bg); /* Fundo branco */
+    color: var(--primary-color); /* Texto na cor primária */
+    border: 1px solid var(--primary-color); /* Borda na cor primária */
+    border-radius: var(--border-radius); /* Raio de borda padrão */
+    font-weight: 600;
 }
+/* Faz os botões no grupo de upload crescerem */
+.button-group .btn-secondary {
+    flex: 1; /* Faz os botões dividirem o espaço */
+}
+
 .btn-secondary:hover {
-    background-color: #000;
+    background-color: #e8e8f8; /* Fundo indigo bem claro no hover */
 }
 .btn:disabled {
     background-color: #cccccc;
