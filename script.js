@@ -25,7 +25,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // DADOS DA APLICAÇÃO
     // ===============================
     let usuarios = [];
-    const formasDePagamento = ['Cartão de crédito', 'Dinheiro'];
+    // const formasDePagamento = ['Cartão de crédito', 'Dinheiro']; // <-- REMOVIDO
     const categorias = ['Alimentação', 'Deslocamento', 'Outros'];
 
     // URLs ATUALIZADAS
@@ -40,7 +40,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // ===============================
     const formRegistro = document.getElementById('despesa-form');
     const selectNome = document.getElementById('nome');
-    const selectForma = document.getElementById('forma_pagamento');
+    // const selectForma = document.getElementById('forma_pagamento'); // <-- REMOVIDO
     const selectGrupo = document.getElementById('grupo');
     const inputValor = document.getElementById('valor');
     const inputData = document.getElementById('data');
@@ -70,15 +70,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function popularFormasPagamento() {
-        if (selectForma) {
-            selectForma.innerHTML = '';
-            formasDePagamento.forEach(forma => {
-                const opt = new Option(forma, forma);
-                selectForma.appendChild(opt);
-            });
-        }
-    }
+    /* <-- FUNÇÃO popularFormasPagamento() REMOVIDA --> */
 
     function popularCategorias() {
         if (selectGrupo) {
@@ -222,7 +214,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             console.error("Não foi possível carregar os dados de despesas.", error);
             alert("Não foi possível conectar à planilha de despesas. A verificação de limite pode não funcionar.");
-            throw error; // <-- ALTERAÇÃO: Propaga o erro para quem chamou
+            throw error; 
         }
     }
 
@@ -315,7 +307,7 @@ document.addEventListener('DOMContentLoaded', () => {
             params.append('grupo', selectGrupo.value);
             params.append('valor', inputValor.value);
             params.append('descricao', document.getElementById('descricao').value);
-            params.append('forma_pagamento', selectForma.value);
+            // params.append('forma_pagamento', selectForma.value); // <-- REMOVIDO
             params.append('nota_fiscal_url', document.getElementById('nota_fiscal_url').value);
 
             try {
@@ -381,7 +373,7 @@ document.addEventListener('DOMContentLoaded', () => {
         inputCamera?.addEventListener('change', () => atualizarNomeArquivo(inputCamera));
         inputArquivo?.addEventListener('change', () => atualizarNomeArquivo(inputArquivo));
         
-        popularFormasPagamento();
+        // popularFormasPagamento(); // <-- REMOVIDO
         popularCategorias();
         configurarCampoValor();
         configurarDataAtual();
@@ -408,10 +400,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         async function gerarRelatoriosPorCategoria() {
             const originalBtnText = submitBtnRelatorio.textContent;
-            submitBtnRelatorio.textContent = 'Carregando dados...'; // <-- ALTERAÇÃO: Texto inicial
+            submitBtnRelatorio.textContent = 'Carregando dados...'; 
             submitBtnRelatorio.disabled = true;
 
-            // <-- INÍCIO DA ALTERAÇÃO -->
+            
             // 1. RECARREGA OS DADOS ANTES DE GERAR O RELATÓRIO
             try {
                 await carregarDadosDespesas();
@@ -424,8 +416,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 submitBtnRelatorio.disabled = false;
                 return; // Para a geração do relatório
             }
-            // <-- FIM DA ALTERAÇÃO -->
-
+            
             // Se carregou os dados com sucesso, muda o texto e continua
             submitBtnRelatorio.textContent = 'Gerando relatórios...';
 
